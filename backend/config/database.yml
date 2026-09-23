@@ -23,6 +23,9 @@ default: &default
 development:
   <<: *default
   database: backend_development
+  host: localhost
+  username: <%= Rails.application.credentials.dig(:development, :db, :username) %>
+  password: <%= Rails.application.credentials.dig(:development, :db, :password) %>
 
   # The specified database role being used to connect to PostgreSQL.
   # To create additional roles in PostgreSQL see `$ createuser --help`.
@@ -88,7 +91,8 @@ production:
   primary: &primary_production
     <<: *default
     database: backend_production
-    username: backend
+    host: <%= ENV["DB_HOST"] %>
+    username: <%= ENV["DB_USER"] %>
     password: <%= ENV["BACKEND_DATABASE_PASSWORD"] %>
   cache:
     <<: *primary_production
