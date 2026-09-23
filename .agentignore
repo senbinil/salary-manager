@@ -1,0 +1,21 @@
+# Files and directories that coding agents should not read, search, or include in context.
+# Complements .gitignore — .gitignore controls what git tracks, this controls what agents see.
+
+# VCS internals
+.git/
+
+# Rails runtime / generated artifacts
+backend/log/
+backend/tmp/
+backend/storage/
+backend/vendor/
+backend/coverage/
+
+# Secrets — never expose to agents
+config/master.key
+.env
+.env.*
+!.env.example
+
+# Future frontend dependencies
+frontend/node_modules/
