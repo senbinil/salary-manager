@@ -29,6 +29,12 @@ module Backend
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
+    # Rodauth's cookie-based JSON API needs the session and cookies middleware,
+    # which API-only apps omit from the default middleware stack.
+    config.session_store :cookie_store, key: "_backend_session"
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use config.session_store, config.session_options
+
     # Generate RSpec specs instead of Minitest tests.
     config.generators do |g|
       g.test_framework :rspec, fixture: false
