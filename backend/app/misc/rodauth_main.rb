@@ -36,7 +36,7 @@ class RodauthMain < Rodauth::Rails::Auth
     # require_login_confirmation? false
 
     # Use path prefix for all routes.
-    # prefix "/auth"
+    prefix "/api/v1"
 
     # Specify the controller used for view rendering, CSRF, and callbacks.
     rails_controller { RodauthController }
