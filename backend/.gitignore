@@ -31,3 +31,6 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
+# Ignore generated API docs (rebuilt in CI with `npx @redocly/cli build-docs`).
+/doc/index.html
+

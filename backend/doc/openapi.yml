@@ -1,0 +1,415 @@
+openapi: 3.0.3
+info:
+  title: Salary Manager API
+  version: 1.0.0
+  description: |
+    HTTP API for the salary-manager application.
+
+    All endpoints accept and return JSON unless noted otherwise. Authentication
+    uses a cookie session: `POST /api/v1/login` sets a `_backend_session` cookie,
+    which must be sent with subsequent authenticated requests.
+
+    Auth routes are provided by [Rodauth](https://rodauth.jeremyevans.net) and
+    namespaced under `/api/v1`.
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+security: []
+tags:
+  - name: Auth
+    description: Account lifecycle and authentication (Rodauth)
+  - name: Health
+    description: Application health checks
+paths:
+  /up:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Health check
+      description: Returns 200 if the application boots without exceptions.
+      responses:
+        "200":
+          description: Application is healthy.
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /api/v1/create-account:
+    post:
+      tags: [Auth]
+      operationId: createAccount
+      summary: Create a new account
+      description: >
+        Registers a new account and queues a verification email. The account
+        must be verified before it can log in (see `verify-account`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+
+  /api/v1/verify-account:
+    post:
+      tags: [Auth]
+      operationId: verifyAccount
+      summary: Verify an account
+      description: Verifies a newly created account using the token emailed during registration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyAccountRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/verify-account-resend:
+    post:
+      tags: [Auth]
+      operationId: resendAccountVerification
+      summary: Resend the account verification email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendVerificationRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+
+  /api/v1/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Log in
+      description: >
+        Authenticates with email and password. On success, sets the
+        `_backend_session` cookie used to authenticate subsequent requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/LoginSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Log out
+      description: Ends the current session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+
+  /api/v1/reset-password-request:
+    post:
+      tags: [Auth]
+      operationId: requestPasswordReset
+      summary: Request a password reset
+      description: Sends a password reset email with a reset token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/reset-password:
+    post:
+      tags: [Auth]
+      operationId: resetPassword
+      summary: Reset the password
+      description: Sets a new password using the token emailed by `reset-password-request`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+
+  /api/v1/change-password:
+    post:
+      tags: [Auth]
+      operationId: changePassword
+      summary: Change the account password
+      description: Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+
+  /api/v1/change-login:
+    post:
+      tags: [Auth]
+      operationId: changeLogin
+      summary: Change the account email
+      description: >
+        Requires an authenticated session. A verification email is sent to the
+        new address; the change takes effect via `verify-login-change`.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeLoginRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+
+  /api/v1/verify-login-change:
+    post:
+      tags: [Auth]
+      operationId: verifyLoginChange
+      summary: Verify an email change
+      description: Confirms an email change using the token emailed to the new address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyLoginChangeRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/close-account:
+    post:
+      tags: [Auth]
+      operationId: closeAccount
+      summary: Close the account
+      description: Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseAccountRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: _backend_session
+  responses:
+    Success:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SuccessResponse"
+    LoginSuccess:
+      description: Login succeeded; the session cookie is set.
+      headers:
+        Set-Cookie:
+          description: Session cookie (`_backend_session`) used to authenticate subsequent requests.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SuccessResponse"
+    BadRequest:
+      description: Invalid or expired request parameter
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Account is not allowed to perform the action (e.g. unverified)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unprocessable:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: string
+          description: Success message.
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
+        reason:
+          type: string
+          description: Machine-readable error identifier (e.g. `invalid_password`).
+        field-error:
+          type: array
+          description: A failing field name and its error message, as a two-element array.
+          items:
+            type: string
+          minItems: 2
+          maxItems: 2
+    CreateAccountRequest:
+      type: object
+      required: [email, password, password-confirm]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        password-confirm:
+          type: string
+          description: Must match `password`.
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    VerifyAccountRequest:
+      type: object
+      required: [key]
+      properties:
+        key:
+          type: string
+          description: Verification token from the verification email.
+    ResendVerificationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    ResetPasswordRequest:
+      type: object
+      required: [key, password, password-confirm]
+      properties:
+        key:
+          type: string
+          description: Reset token from the password reset email.
+        password:
+          type: string
+          minLength: 8
+        password-confirm:
+          type: string
+          description: Must match `password`.
+    ChangePasswordRequest:
+      type: object
+      required: [password, new-password, password-confirm]
+      properties:
+        password:
+          type: string
+          description: Current password.
+        new-password:
+          type: string
+          minLength: 8
+        password-confirm:
+          type: string
+          description: Must match `new-password`.
+    ChangeLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: New email address.
+        password:
+          type: string
+          description: Current password.
+    VerifyLoginChangeRequest:
+      type: object
+      required: [key]
+      properties:
+        key:
+          type: string
+          description: Verification token from the email-change email.
+    CloseAccountRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          description: Current password.
