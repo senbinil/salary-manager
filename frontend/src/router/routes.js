@@ -1,5 +1,6 @@
 import RootLayout from '../layouts/RootLayout.jsx'
 import Home from '../pages/Home.jsx'
+import Login from '../pages/Login.jsx'
 import NotFound from '../pages/NotFound.jsx'
 import { paths } from './paths.js'
 
@@ -7,15 +8,16 @@ import { paths } from './paths.js'
  * The app's route tree. `main.jsx` hands this to `createBrowserRouter` and the
  * tests hand it to `createMemoryRouter`, so both exercise the same tree.
  *
- * Not-found is a child of the layout rather than a sibling route: unknown URLs
- * keep the app shell instead of dropping to a bare page.
+ * Sign-in is a top-level route rather than a child of `RootLayout`: the product
+ * chrome belongs to signed-in screens. The signed-in side is a pathless layout
+ * route, which keeps the shell around both the dashboard and the 404.
  */
 export const routes = [
+  { path: paths.login, Component: Login },
   {
-    path: paths.home,
     Component: RootLayout,
     children: [
-      { index: true, Component: Home },
+      { path: paths.dashboard, Component: Home },
       { path: '*', Component: NotFound },
     ],
   },
