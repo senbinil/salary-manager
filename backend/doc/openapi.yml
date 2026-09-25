@@ -22,8 +22,10 @@ tags:
     description: Application health checks
   - name: Session
     description: The signed-in account's session state (application endpoints)
-  - name: Reference
-    description: Lookup data used across the app (countries, departments, designations)
+  - name: Countries
+    description: Employment countries (seeded ISO 3166-1 reference data)
+  - name: Departments
+    description: Departments an employee can belong to
 paths:
   /up:
     get:
@@ -241,7 +243,7 @@ paths:
 
   /api/v1/countries:
     get:
-      tags: [Reference]
+      tags: [Countries]
       operationId: listCountries
       summary: List countries
       description: >
@@ -258,6 +260,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Country"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/departments:
+    get:
+      tags: [Departments]
+      operationId: listDepartments
+      summary: List departments
+      description: >
+        Returns the departments an employee can belong to, so a client can pick
+        one. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: All departments, ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Department"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -361,6 +385,20 @@ components:
           type: string
           pattern: "^[A-Z]{3}$"
           description: ISO 4217 currency code.
+    Department:
+      type: object
+      description: >
+        Lookup data. Every employee belongs to exactly one department
+        (`Employee.department_id`). Departments organize and filter; they do not
+        affect compensation amounts.
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          description: Department id.
+        name:
+          type: string
+          description: Department name, unique.
     CreateAccountRequest:
       type: object
       required: [email, password, password-confirm]
