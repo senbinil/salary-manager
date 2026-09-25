@@ -28,6 +28,8 @@ tags:
     description: Departments an employee can belong to
   - name: Designations
     description: Designations (job titles) an employee can hold
+  - name: Employees
+    description: Employees on record, and the departments and designations they hold
   - name: SalaryComponents
     description: Salary vocabulary a compensation plan can attach an amount to
 paths:
@@ -311,6 +313,59 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /api/v1/employees:
+    get:
+      tags: [Employees]
+      operationId: listEmployees
+      summary: List employees
+      description: >
+        Returns the employees on record, so a client can browse the organization.
+        Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: All employees, ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/employees/{id}:
+    get:
+      tags: [Employees]
+      operationId: getEmployee
+      summary: Get an employee
+      description: Returns one employee by id. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Employee id.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The employee identified by the id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No employee with that id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/v1/salary_components:
     get:
       tags: [SalaryComponents]
@@ -467,6 +522,31 @@ components:
         name:
           type: string
           description: Designation name, unique.
+    Employee:
+      type: object
+      description: >
+        An employment record. Deliberately not the account - a user is not
+        necessarily an employee - so `user_id` is optional. Department and
+        designation travel as ids, so a client joins them against their own
+        endpoints.
+      required: [id, name, department_id, designation_id]
+      properties:
+        id:
+          type: integer
+          description: Employee id.
+        name:
+          type: string
+          description: Employee name.
+        department_id:
+          type: integer
+          description: Department the employee belongs to.
+        designation_id:
+          type: integer
+          description: Designation (job title) the employee holds.
+        user_id:
+          type: integer
+          nullable: true
+          description: The account behind the employee, when there is one. Usually absent.
     SalaryComponent:
       type: object
       description: >
