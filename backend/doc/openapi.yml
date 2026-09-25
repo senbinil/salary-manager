@@ -20,6 +20,8 @@ tags:
     description: Account lifecycle and authentication (Rodauth)
   - name: Health
     description: Application health checks
+  - name: Session
+    description: The signed-in account's session state (application endpoints)
 paths:
   /up:
     get:
@@ -215,6 +217,26 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /api/v1/me:
+    get:
+      tags: [Session]
+      operationId: getCurrentAccount
+      summary: Get the signed-in account
+      description: >
+        Reports the account behind the current session, so a client can tell whether it
+        is still signed in. This is the endpoint to probe for "am I authenticated?".
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: The account behind the current session.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -286,6 +308,17 @@ components:
             type: string
           minItems: 2
           maxItems: 2
+    MeResponse:
+      type: object
+      description: The account behind the current session. Never carries the password hash or status.
+      properties:
+        id:
+          type: integer
+          description: Account id.
+        email:
+          type: string
+          format: email
+          description: The account's email address.
     CreateAccountRequest:
       type: object
       required: [email, password, password-confirm]
