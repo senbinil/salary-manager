@@ -82,6 +82,16 @@ RSpec.describe "Authentication", type: :request do
     end
   end
 
+  describe "GET /api/v1/me" do
+    it "rejects a request with no session" do
+      get "/api/v1/me"
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(json_body["reason"]).to eq("login_required")
+      expect(json_body["error"]).to eq("Please login to continue")
+    end
+  end
+
   describe "unversioned auth routes" do
     it "does not expose login outside the versioned namespace" do
       post "/login", params: { email: email, password: password }, as: :json
