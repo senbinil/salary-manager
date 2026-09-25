@@ -104,4 +104,18 @@ describe('routes', () => {
       screen.queryByRole('heading', { level: 1, name: /salary management/i }),
     ).not.toBeInTheDocument()
   })
+
+  it('sends a signed-in visitor from sign-in to the dashboard', async () => {
+    const { router } = renderWithRouter(routes)
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/dashboard'),
+    )
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: /salary management/i,
+      }),
+    ).toBeInTheDocument()
+  })
 })
