@@ -10,7 +10,7 @@ class RodauthController < ApplicationController
   # layout "authentication"
   # layout -> do
   #   case rodauth.current_route
-  #   when :login, :create_account, :verify_account, :verify_account_resend,
+  #   when :login, :create_account,
   #        :reset_password, :reset_password_request
   #     "authentication"
   #   else
