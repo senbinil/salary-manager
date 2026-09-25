@@ -13,6 +13,7 @@ Rails.application.routes.draw do
 
       resources :countries, only: :index
       resources :departments, only: :index
+      resources :designations, only: :index
     end
   end
 

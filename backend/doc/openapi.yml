@@ -23,9 +23,11 @@ tags:
   - name: Session
     description: The signed-in account's session state (application endpoints)
   - name: Countries
-    description: Employment countries (seeded ISO 3166-1 reference data)
+    description: Employment countries (ISO 3166-1 reference data)
   - name: Departments
     description: Departments an employee can belong to
+  - name: Designations
+    description: Designations (job titles) an employee can hold
 paths:
   /up:
     get:
@@ -247,8 +249,8 @@ paths:
       operationId: listCountries
       summary: List countries
       description: >
-        Returns the seeded countries, so a client can choose an employment
-        country. Requires an authenticated session.
+        Returns the employment countries, so a client can pick one. Requires an
+        authenticated session.
       security:
         - cookieAuth: []
       responses:
@@ -282,6 +284,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Department"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/designations:
+    get:
+      tags: [Designations]
+      operationId: listDesignations
+      summary: List designations
+      description: >
+        Returns the designations (job titles) an employee can hold, so a client
+        can pick one. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: All designations, ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Designation"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -370,8 +394,8 @@ components:
     Country:
       type: object
       description: >
-        Seeded ISO 3166-1 reference data. A country's currency is the default for
-        a contract employing in it. Never carries a surrogate id — the code is the key.
+        ISO 3166-1 reference data. A country's currency is the default for a
+        contract employing in it. Never carries a surrogate id — the code is the key.
       required: [code, name, currency]
       properties:
         code:
@@ -399,6 +423,20 @@ components:
         name:
           type: string
           description: Department name, unique.
+    Designation:
+      type: object
+      description: >
+        Lookup data. Every employee holds exactly one designation
+        (`Employee.designation_id`). A relation rather than free text, so reports
+        can group and filter by job title without typos or duplicates.
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          description: Designation id.
+        name:
+          type: string
+          description: Designation name, unique.
     CreateAccountRequest:
       type: object
       required: [email, password, password-confirm]
