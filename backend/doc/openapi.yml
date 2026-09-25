@@ -26,6 +26,8 @@ tags:
     description: Employment countries (ISO 3166-1 reference data)
   - name: Departments
     description: Departments an employee can belong to
+  - name: Designations
+    description: Designations (job titles) an employee can hold
 paths:
   /up:
     get:
@@ -285,6 +287,28 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /api/v1/designations:
+    get:
+      tags: [Designations]
+      operationId: listDesignations
+      summary: List designations
+      description: >
+        Returns the designations (job titles) an employee can hold, so a client
+        can pick one. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: All designations, ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Designation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -399,6 +423,20 @@ components:
         name:
           type: string
           description: Department name, unique.
+    Designation:
+      type: object
+      description: >
+        Lookup data. Every employee holds exactly one designation
+        (`Employee.designation_id`). A relation rather than free text, so reports
+        can group and filter by job title without typos or duplicates.
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          description: Designation id.
+        name:
+          type: string
+          description: Designation name, unique.
     CreateAccountRequest:
       type: object
       required: [email, password, password-confirm]
