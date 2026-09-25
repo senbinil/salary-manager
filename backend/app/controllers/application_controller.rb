@@ -16,4 +16,15 @@ class ApplicationController < ActionController::API
 
     render json: { reason: "login_required", error: "Please login to continue" }, status: :unauthorized
   end
+
+  # Halts a request unless the signed-in account holds one of the allowed roles.
+  #
+  # Being signed out is answered as unauthenticated rather than forbidden, so a
+  # client can tell "please log in" from "you may not do this".
+  def require_role!(*roles)
+    return authenticate! unless current_account
+    return if roles.map(&:to_s).include?(current_account.role)
+
+    render json: { reason: "insufficient_role", error: "You are not allowed to do this" }, status: :forbidden
+  end
 end
