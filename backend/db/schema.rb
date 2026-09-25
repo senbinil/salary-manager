@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_25_124817) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_25_133042) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -87,6 +87,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_25_124817) do
     t.index ["user_id"], name: "index_employees_on_user_id", unique: true
   end
 
+  create_table "employment_contracts", force: :cascade do |t|
+    t.bigint "compensation_plan_id", null: false
+    t.string "country_code", limit: 2, null: false
+    t.string "currency", limit: 3, null: false
+    t.bigint "employee_id", null: false
+    t.date "end_date"
+    t.date "start_date", null: false
+    t.index ["compensation_plan_id"], name: "index_employment_contracts_on_compensation_plan_id"
+    t.index ["country_code"], name: "index_employment_contracts_on_country_code"
+    t.index ["employee_id"], name: "index_employment_contracts_on_employee_id"
+    t.index ["employee_id"], name: "index_employment_contracts_on_open_ended_employee", unique: true, where: "(end_date IS NULL)"
+    t.check_constraint "end_date IS NULL OR end_date > start_date", name: "employment_contracts_end_after_start"
+  end
+
   create_table "salary_components", force: :cascade do |t|
     t.integer "category", null: false
     t.string "name", null: false
@@ -102,4 +116,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_25_124817) do
   add_foreign_key "employees", "accounts", column: "user_id"
   add_foreign_key "employees", "departments"
   add_foreign_key "employees", "designations"
+  add_foreign_key "employment_contracts", "compensation_plans"
+  add_foreign_key "employment_contracts", "countries", column: "country_code", primary_key: "code"
+  add_foreign_key "employment_contracts", "employees"
 end
