@@ -12,6 +12,7 @@ import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import { Eye, EyeOff } from 'lucide-react'
 import { useNavigate } from 'react-router'
+import { errorMessage } from '../api/errorMessage.js'
 import { paths } from '../router/paths.js'
 
 /** Shown when the request failed without saying anything worth repeating. */
@@ -45,18 +46,6 @@ function requiredErrors({ email, password }) {
   if (!password) errors.password = 'Password is required'
 
   return errors
-}
-
-/**
- * Rodauth answers a failed sign-in with `{ error, reason, "field-error": [field,
- * message] }`. Gather whatever it sent into one line, so the alert never renders
- * an empty string or leaks axios's "Request failed with status code 401".
- */
-function errorMessage(error) {
-  const data = error?.response?.data
-  const messages = [data?.error, data?.['field-error']?.[1]].filter(Boolean)
-
-  return messages.length > 0 ? messages.join(' ') : FALLBACK_ERROR
 }
 
 /**
@@ -119,7 +108,11 @@ export default function Login() {
               Sign in
             </Typography>
 
-            {error && <Alert severity="error">{errorMessage(error)}</Alert>}
+            {error && (
+              <Alert severity="error">
+                {errorMessage(error, FALLBACK_ERROR)}
+              </Alert>
+            )}
 
             <TextField
               name="email"
