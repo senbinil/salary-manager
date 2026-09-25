@@ -5,8 +5,9 @@ import { renderWithRouter } from '../test/render.jsx'
 import { routes } from './routes.js'
 
 // The signed-in area probes the API for the current session before it renders,
-// so axios is the system boundary these tests stub.
-vi.mock('axios', () => ({ default: { get: vi.fn() } }))
+// and the shell ends that session from the app bar, so axios is the system
+// boundary these tests stub.
+vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
 
 describe('routes', () => {
   beforeEach(() => {
@@ -127,5 +128,32 @@ describe('routes', () => {
         name: /salary management/i,
       }),
     ).toBeInTheDocument()
+  })
+
+  it('signs a visitor out of the dashboard and back to sign-in', async () => {
+    // The cookie session is real until the sign-out call ends it: the probe
+    // answers while it lives, and fails once the visitor is out.
+    let signedIn = true
+    axios.get.mockImplementation(() =>
+      signedIn
+        ? Promise.resolve({ data: { id: 1, email: 'person@example.com' } })
+        : Promise.reject({ response: { status: 401 } }),
+    )
+    axios.post.mockImplementation(() => {
+      signedIn = false
+      return Promise.resolve({ data: { success: 'You have been logged out' } })
+    })
+    const user = userEvent.setup()
+    const { router } = renderWithRouter(routes, { route: '/dashboard' })
+
+    await user.click(await screen.findByRole('button', { name: /sign out/i }))
+
+    // The loader for the sign-in route is async, so the router's state moves a
+    // tick before the page it renders does — wait for the page, not the URL.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /sign in/i }),
+    ).toBeInTheDocument()
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    expect(axios.post).toHaveBeenCalledWith('/api/v1/logout', {})
   })
 })
