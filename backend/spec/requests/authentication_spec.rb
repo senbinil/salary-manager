@@ -90,6 +90,22 @@ RSpec.describe "Authentication", type: :request do
       expect(json_body["reason"]).to eq("login_required")
       expect(json_body["error"]).to eq("Please login to continue")
     end
+
+    context "with a session" do
+      let!(:account) { create(:account, :verified, email: email, password: password) }
+
+      before do
+        post "/api/v1/login", params: { email: email, password: password }, as: :json
+      end
+
+      it "reports the signed-in account" do
+        get "/api/v1/me"
+
+        expect(response).to have_http_status(:ok)
+        expect(json_body["id"]).to eq(account.id)
+        expect(json_body["email"]).to eq(email)
+      end
+    end
   end
 
   describe "unversioned auth routes" do
