@@ -45,6 +45,10 @@ env:
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
     SOLID_QUEUE_IN_PUMA: true
 
+    # Origins allowed to call the API cross-origin, comma-separated. Set this to
+    # the deployed frontend origin(s); a `*` value crashes the app at boot.
+    # CORS_ORIGINS: https://app.example.com
+
     # Set number of processes dedicated to Solid Queue (default: 1)
     # JOB_CONCURRENCY: 3
 
