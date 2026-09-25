@@ -80,4 +80,15 @@ describe('routes', () => {
       screen.getByRole('heading', { level: 1, name: /sign in/i }),
     ).toBeInTheDocument()
   })
+
+  it('sends the visitor to sign-in when the session cannot be checked', async () => {
+    // An unreachable API is not proof of a session, so the area stays closed.
+    axios.get.mockRejectedValue(new Error('Network Error'))
+    const { router } = renderWithRouter(routes, { route: '/dashboard' })
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    expect(
+      screen.queryByRole('heading', { level: 1, name: /salary management/i }),
+    ).not.toBeInTheDocument()
+  })
 })
