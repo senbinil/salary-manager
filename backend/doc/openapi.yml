@@ -23,7 +23,7 @@ tags:
   - name: Session
     description: The signed-in account's session state (application endpoints)
   - name: Countries
-    description: Employment countries (seeded ISO 3166-1 reference data)
+    description: Employment countries (ISO 3166-1 reference data)
   - name: Departments
     description: Departments an employee can belong to
 paths:
@@ -247,8 +247,8 @@ paths:
       operationId: listCountries
       summary: List countries
       description: >
-        Returns the seeded countries, so a client can choose an employment
-        country. Requires an authenticated session.
+        Returns the employment countries, so a client can pick one. Requires an
+        authenticated session.
       security:
         - cookieAuth: []
       responses:
@@ -370,8 +370,8 @@ components:
     Country:
       type: object
       description: >
-        Seeded ISO 3166-1 reference data. A country's currency is the default for
-        a contract employing in it. Never carries a surrogate id — the code is the key.
+        ISO 3166-1 reference data. A country's currency is the default for a
+        contract employing in it. Never carries a surrogate id — the code is the key.
       required: [code, name, currency]
       properties:
         code:
