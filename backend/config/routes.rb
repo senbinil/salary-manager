@@ -12,6 +12,7 @@ Rails.application.routes.draw do
       get "me", to: "me#show", as: :me
 
       resources :countries, only: :index
+      resources :departments, only: :index
     end
   end
 
