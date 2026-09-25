@@ -30,6 +30,8 @@ tags:
     description: Designations (job titles) an employee can hold
   - name: Employees
     description: Employees on record, and the departments and designations they hold
+  - name: SalaryComponents
+    description: Salary vocabulary a compensation plan can attach an amount to
 paths:
   /up:
     get:
@@ -364,6 +366,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/v1/salary_components:
+    get:
+      tags: [SalaryComponents]
+      operationId: listSalaryComponents
+      summary: List salary components
+      description: >
+        Returns the salary components a compensation plan can attach an amount
+        to. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: All components, ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalaryComponent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -523,6 +547,25 @@ components:
           type: integer
           nullable: true
           description: The account behind the employee, when there is one. Usually absent.
+    SalaryComponent:
+      type: object
+      description: >
+        Shared vocabulary. The definition only - no amount lives here, so the same
+        component can carry a different amount on every plan.
+      required: [id, name, category]
+      properties:
+        id:
+          type: integer
+          description: Salary component id.
+        name:
+          type: string
+          description: Component name, unique.
+        category:
+          type: string
+          enum: [earning, allowance, contribution]
+          description: >
+            earning and allowance count toward reported compensation;
+            contribution does not.
     CreateAccountRequest:
       type: object
       required: [email, password, password-confirm]
