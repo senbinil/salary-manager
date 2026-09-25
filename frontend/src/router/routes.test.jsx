@@ -91,4 +91,17 @@ describe('routes', () => {
       screen.queryByRole('heading', { level: 1, name: /salary management/i }),
     ).not.toBeInTheDocument()
   })
+
+  it('shows a loading state while the session is being checked', async () => {
+    // Never settles, so the gate is still waiting for the length of the test.
+    axios.get.mockReturnValue(new Promise(() => {}))
+    renderWithRouter(routes, { route: '/dashboard' })
+
+    expect(
+      await screen.findByLabelText(/checking your session/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { level: 1, name: /salary management/i }),
+    ).not.toBeInTheDocument()
+  })
 })
