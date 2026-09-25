@@ -8,7 +8,7 @@ module Api
       def show
         account = current_account
 
-        render json: { id: account.id, email: account.email }
+        render json: { id: account.id, email: account.email, role: account.role }
       end
     end
   end

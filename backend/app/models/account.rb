@@ -15,4 +15,13 @@ class Account < ApplicationRecord
   # `attribute :status, :integer, default: ...` line - re-declaring the
   # attribute replaces the enum type and makes `status` return raw integers.
   enum :status, { unverified: 1, verified: 2, closed: 3 }, default: :verified
+
+  # Role is access control, which belongs to the account rather than the
+  # employee: a user is not necessarily an employee, so a role has to exist for
+  # accounts with no employee record. Least privilege is the low value, so
+  # anything that lands on 0 by accident gets the fewest powers.
+  #
+  # NOTE: the same `default:` caveat as status applies, and the column default
+  # is what Rodauth's Sequel insert actually applies - both have to agree.
+  enum :role, { employee: 0, manager: 1, hr: 2 }, default: :employee
 end

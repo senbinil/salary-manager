@@ -52,16 +52,16 @@ flowchart LR
 
 ## Phase 0 — Decisions before any code
 
-Nothing is built here. Resolve these five points; each later phase names which decision it depends on.
+Nothing is built here. Settle these five points first; each later phase names which decision it depends on. A settled point says so and records the choice.
 
-### D0.1 — Account ↔ User mapping
+### D0.1 — Where the profile and role live — **settled**
 
-The design's `User` (name, email, role) and Rodauth's `accounts` table describe the same person, but only one exists in code today. Two options:
+Rodauth's `accounts` table stays the only identity table, and `Employee.user_id` points at it. So the design's `User` is the account, with two deliberate calls:
 
-- **A. Extend `accounts` (recommended).** Add `name` and `role` columns to `accounts` and treat `Account` as the design's `User`. `Employee.user_id` points at `accounts`. Rodauth ignores columns it doesn't know, so this is additive. One identity table, and `GET /api/v1/me` already returns the account.
-- **B. Separate `users` table.** Keep `accounts` auth-only; add `users` (name, role, `account_id` unique, 1:1) and point `Employee.user_id` at `users`. More faithful to "a user is not necessarily an employee", at the cost of a join on every request.
+- **`role` goes on `accounts`.** Access control belongs to the account, not the employee: a user is not necessarily an employee, so a role has to exist for accounts with no employee record. It is also the safer home — accounts have no CRUD endpoint, whereas HR will edit employees in Phase 8, so a role on that table would be a privilege-escalation path.
+- **`name` does *not* go on `accounts`.** `Employee.name` (§5.2) already holds it, so a second column would duplicate it. A non-employee account displays as its email until something needs more.
 
-Phase 2 is written for **option A**; note the delta if B is chosen.
+Roles are numbered least-privileged first — `employee: 0, manager: 1, hr: 2` — and the column default is `0`, because that default is what Rodauth's own insert applies and what the public `create-account` route hands out.
 
 ### D0.2 — Country data source
 
@@ -98,13 +98,15 @@ Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate
 
 ## Phase 2 — Users & roles (extends `accounts`)
 
-**Goal.** Give the account a profile (`name`) and a role, and add role-based authorization.
+**Goal.** Give the account a role and add role-based authorization. No `name` column — `Employee.name` owns the display name (D0.1).
 
-- Migration per **D0.1 option A**: add `name` and `role` (`enum: hr | manager | employee`) to `accounts`. (Option B: new `users` table + factory instead.)
-- `Account` model: `enum :role`, validation on `name` presence (keep `status` enum untouched — see the model's own comment about not re-declaring `status`).
-- Extend `GET /api/v1/me` to return `{ id, email, name, role }`; update its request spec (the existing "no extra keys" example changes to the new shape).
-- Add `require_role!(*roles)` to `ApplicationController` as a `before_action` helper (renders 403, mirroring the `authenticate!` style), with specs.
-- **Done when:** migration applied, `me` returns the profile, a role-restricted probe endpoint is blocked/allowed correctly, specs green.
+- Migration: add `role` (`integer`, `not null`, `default: 0`) to `accounts`.
+- `Account` model: `enum :role, { employee: 0, manager: 1, hr: 2 }, default: :employee` — numbered least-privileged first, using the enum's own `default:` option. Keep the `status` enum untouched, and see its comment about not re-declaring an attribute.
+- Extend `GET /api/v1/me` to return `{ id, email, role }`; its "no extra keys" example changes to the new shape.
+- Add `require_role!(*roles)` to `ApplicationController`, mirroring the `authenticate!` style: signed out still answers 401, a signed-in account whose role is not allowed gets 403 `insufficient_role`.
+- **Done when:** the migration is applied, `me` returns the role, `require_role!` blocks and allows correctly, specs green.
+
+> `require_role!` has no production caller until Phase 8 gates the management screens, so it is exercised through a controller spec with an anonymous controller. Inviting accounts (passwordless) is **deferred**: it works — `password_hash` is nullable and `reset-password-request` accepts such an account — but only the role is in scope here.
 
 ---
 

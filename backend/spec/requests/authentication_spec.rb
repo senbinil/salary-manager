@@ -98,18 +98,27 @@ RSpec.describe "Authentication", type: :request do
         post "/api/v1/login", params: { email: email, password: password }, as: :json
       end
 
-      it "reports the signed-in account" do
+      it "reports the signed-in account with its role" do
         get "/api/v1/me"
 
         expect(response).to have_http_status(:ok)
         expect(json_body["id"]).to eq(account.id)
         expect(json_body["email"]).to eq(email)
+        expect(json_body["role"]).to eq("employee")
       end
 
-      it "exposes nothing beyond the account's id and email" do
+      it "reports the role the account actually holds" do
+        account.update!(role: :hr)
+
         get "/api/v1/me"
 
-        expect(json_body.keys).to contain_exactly("id", "email")
+        expect(json_body["role"]).to eq("hr")
+      end
+
+      it "exposes nothing beyond the account's id, email, and role" do
+        get "/api/v1/me"
+
+        expect(json_body.keys).to contain_exactly("id", "email", "role")
       end
     end
 
