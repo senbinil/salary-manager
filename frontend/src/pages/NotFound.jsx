@@ -16,8 +16,8 @@ export default function NotFound() {
       <Typography>
         The page you are looking for does not exist or has moved.
       </Typography>
-      <Button component={Link} to={paths.login} variant="contained">
-        Back to sign in
+      <Button component={Link} to={paths.dashboard} variant="contained">
+        Back to dashboard
       </Button>
     </Stack>
   )
