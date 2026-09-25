@@ -117,8 +117,8 @@ Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate
 - Migration:
   - `employees`: `id`, `user_id` (nullable, unique FK → `accounts`), `name`, `department_id` (not null FK), `designation_id` (not null FK).
 - `Employee` model: belongs_to associations, validations (`department_id`/`designation_id` presence), `user` unique.
-- Endpoints under `/api/v1/employees`: index/show/create/update (destroy if the design warrants it — flag as a slice-level decision; termination is `end_date`, not delete).
-- **Done when:** CRUD works end to end, validations are specified, specs green. (Phases 1 and 2 must precede.)
+- Endpoints (read-only for now, like Phase 1; management CRUD is Phase 8): `GET /api/v1/employees` and `GET /api/v1/employees/:id`. `create`/`update` are deferred to Phase 8, and termination is an `end_date`, not a delete.
+- **Done when:** the table and model exist, validations are specified, both read endpoints return their lists, and specs are green. (Phases 1 and 2 must precede.)
 
 ---
 
@@ -129,11 +129,11 @@ Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate
 - Migrations:
   - `salary_components`: `id`, `name`, `category enum: earning | allowance | contribution`.
   - `compensation_plans`: `id`, `name`.
-  - `compensation_plan_components`: `id`, `compensation_plan_id` FK, `salary_component_id` FK, `amount decimal(16,4)`, `frequency enum: monthly`. Apply the **D0.5** uniqueness choice.
+  - `compensation_plan_components`: `id`, `compensation_plan_id` FK, `salary_component_id` FK, `amount decimal(16,4)`. No `frequency` — amounts are monthly system-wide, so the column would only restate that. Apply the **D0.5** uniqueness choice.
 - Models: `SalaryComponent`, `CompensationPlan` (`has_many :compensation_plan_components`), `CompensationPlanComponent` (amount presence/non-negative; **no currency column** — §3).
-- Endpoints: `salary_components` CRUD, `compensation_plans` CRUD, and a nested assignment path (e.g. `POST /api/v1/compensation_plans/:id/compensation_plan_components`).
-- Optionally seed a starter vocabulary (Basic Salary, Housing Allowance, Bonus, PF) — decide per slice.
-- **Done when:** a plan with components round-trips through the API, constraints enforced, specs green.
+- Endpoints (read-only for now, like Phase 1; management CRUD is Phase 8): `GET /api/v1/salary_components` and `GET /api/v1/compensation_plans`. A plan's `show` (embedding its components) and the nested assignment path (e.g. `POST /api/v1/compensation_plans/:id/compensation_plan_components`) are deferred to later slices.
+- No starter vocabulary is seeded — `db/seeds.rb` stays a stub, so specs and demos build their rows with factories.
+- **Done when:** the three tables exist with their constraints enforced, the read endpoints return their lists, and specs are green.
 
 ---
 
