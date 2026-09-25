@@ -13,11 +13,11 @@ describe('NotFound', () => {
     ).toBeInTheDocument()
   })
 
-  it('links back to the sign-in page', () => {
+  it('links back to the dashboard', () => {
     renderWithRouter(notFoundRoutes, { route: '/missing' })
 
     expect(
-      screen.getByRole('link', { name: /back to sign in/i }),
-    ).toHaveAttribute('href', '/')
+      screen.getByRole('link', { name: /back to dashboard/i }),
+    ).toHaveAttribute('href', '/dashboard')
   })
 })

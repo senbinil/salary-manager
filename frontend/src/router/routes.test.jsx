@@ -57,17 +57,22 @@ describe('routes', () => {
     expect(screen.getByRole('main')).toBeInTheDocument()
   })
 
-  it('returns to the sign-in page from the not-found page', async () => {
+  it('returns to the dashboard from the not-found page', async () => {
     const user = userEvent.setup()
     const { router } = renderWithRouter(routes, { route: '/unknown' })
 
     await user.click(
-      await screen.findByRole('link', { name: /back to sign in/i }),
+      await screen.findByRole('link', { name: /back to dashboard/i }),
     )
 
-    expect(router.state.location.pathname).toBe('/')
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/dashboard'),
+    )
     expect(
-      screen.getByRole('heading', { level: 1, name: /sign in/i }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: /salary management/i,
+      }),
     ).toBeInTheDocument()
   })
 
