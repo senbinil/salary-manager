@@ -4,6 +4,16 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // The API is a separate Rails server on :3000. Routing it through the dev
+  // server keeps every request same-origin, so the browser sends the Rodauth
+  // `_backend_session` cookie with no CORS headers and no `withCredentials`.
+  // No `rewrite` — the backend serves auth under the same `/api/v1` prefix.
+  // `preview.proxy` defaults to this, so `npm run preview` inherits it too.
+  server: {
+    proxy: {
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
