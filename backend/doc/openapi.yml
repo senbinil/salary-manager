@@ -22,6 +22,8 @@ tags:
     description: Application health checks
   - name: Session
     description: The signed-in account's session state (application endpoints)
+  - name: Reference
+    description: Lookup data used across the app (countries, departments, designations)
 paths:
   /up:
     get:
@@ -237,6 +239,28 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /api/v1/countries:
+    get:
+      tags: [Reference]
+      operationId: listCountries
+      summary: List countries
+      description: >
+        Returns the seeded countries, so a client can choose an employment
+        country. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: All countries, ordered by ISO 3166-1 alpha-2 code.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Country"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -319,6 +343,24 @@ components:
           type: string
           format: email
           description: The account's email address.
+    Country:
+      type: object
+      description: >
+        Seeded ISO 3166-1 reference data. A country's currency is the default for
+        a contract employing in it. Never carries a surrogate id — the code is the key.
+      required: [code, name, currency]
+      properties:
+        code:
+          type: string
+          pattern: "^[A-Z]{2}$"
+          description: ISO 3166-1 alpha-2 country code.
+        name:
+          type: string
+          description: Country name.
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: ISO 4217 currency code.
     CreateAccountRequest:
       type: object
       required: [email, password, password-confirm]
