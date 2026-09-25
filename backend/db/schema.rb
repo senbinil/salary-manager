@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_25_115539) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_25_124817) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -45,6 +45,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_25_115539) do
     t.integer "status", default: 1, null: false
     t.index ["email"], name: "index_accounts_on_email", unique: true, where: "(status = ANY (ARRAY[1, 2]))"
     t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
+  end
+
+  create_table "compensation_plan_components", force: :cascade do |t|
+    t.decimal "amount", precision: 16, scale: 4, null: false
+    t.bigint "compensation_plan_id", null: false
+    t.bigint "salary_component_id", null: false
+    t.index ["compensation_plan_id", "salary_component_id"], name: "index_compensation_plan_components_on_plan_and_component", unique: true
+    t.index ["compensation_plan_id"], name: "index_compensation_plan_components_on_compensation_plan_id"
+    t.index ["salary_component_id"], name: "index_compensation_plan_components_on_salary_component_id"
   end
 
   create_table "compensation_plans", force: :cascade do |t|
@@ -88,6 +97,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_25_115539) do
   add_foreign_key "account_password_reset_keys", "accounts", column: "id"
   add_foreign_key "account_remember_keys", "accounts", column: "id"
   add_foreign_key "account_verification_keys", "accounts", column: "id"
+  add_foreign_key "compensation_plan_components", "compensation_plans"
+  add_foreign_key "compensation_plan_components", "salary_components"
   add_foreign_key "employees", "accounts", column: "user_id"
   add_foreign_key "employees", "departments"
   add_foreign_key "employees", "designations"
