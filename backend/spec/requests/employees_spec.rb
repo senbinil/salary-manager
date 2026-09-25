@@ -68,4 +68,42 @@ RSpec.describe "Employees", type: :request do
       end
     end
   end
+
+  describe "GET /api/v1/employees/:id" do
+    let!(:employee) { create(:employee, name: "Ada") }
+
+    it "rejects a request with no session" do
+      get "/api/v1/employees/#{employee.id}"
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(json_body["reason"]).to eq("login_required")
+    end
+
+    context "with a session" do
+      before do
+        create(:account, :verified, email: email, password: password)
+        post "/api/v1/login", params: { email: email, password: password }, as: :json
+      end
+
+      it "returns the employee identified by the id" do
+        get "/api/v1/employees/#{employee.id}"
+
+        expect(response).to have_http_status(:ok)
+        expect(json_body).to eq(
+          "id" => employee.id,
+          "name" => "Ada",
+          "department_id" => employee.department_id,
+          "designation_id" => employee.designation_id,
+          "user_id" => nil
+        )
+      end
+
+      it "answers 404 for an employee that does not exist" do
+        get "/api/v1/employees/0"
+
+        expect(response).to have_http_status(:not_found)
+        expect(json_body["error"]).to be_present
+      end
+    end
+  end
 end
