@@ -72,6 +72,14 @@ The plan pays three components. An employee whose contract assigns this plan has
 
 The same plan can be assigned to any number of contracts. Each contract supplies the currency the amounts are expressed in.
 
+The plan reaches a person **only through the contract** — nothing above mentions an employee:
+
+```
+employee → active contract → compensation plan → its components
+```
+
+`employment_contracts.compensation_plan_id` is the single reference tying a person to a plan (§5.3 of `ARCHITECTURE.md`). That is what makes the rows above a **price list** rather than anyone's pay: they become one employee's compensation only once a contract names the plan and supplies the currency the amounts are read in.
+
 ---
 
 ## 4. Why not put the amount on `SalaryComponent`?
@@ -89,9 +97,15 @@ Splitting them means a plan change (an amount) never touches the shared vocabula
 
 ```mermaid
 erDiagram
+    EMPLOYEE ||--o{ EMPLOYMENT_CONTRACT : "signs"
+    EMPLOYMENT_CONTRACT }o--|| COMPENSATION_PLAN : "assigned"
     COMPENSATION_PLAN ||--o{ COMPENSATION_PLAN_COMPONENT : "assigns"
     COMPENSATION_PLAN_COMPONENT }o--|| SALARY_COMPONENT : "uses"
 ```
+
+The top hop answers "how does this link to an employee": it does not, directly. `EMPLOYMENT_CONTRACT` is the only thing that points at a plan, so every path from a person to an amount runs through it, and one plan serves any number of contracts. That hop is also where "one active contract per employee" lives — the partial unique index on open-ended contracts (§5.3, §7 of `ARCHITECTURE.md`).
+
+The contract owns the two facts the component table deliberately lacks: the **currency** the amounts are read in (§3), and the **date range** that decides which plan applies to a period (§6.1, §7 of `ARCHITECTURE.md`). This is the compensation slice of the full domain diagram in §2 of [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ---
 
