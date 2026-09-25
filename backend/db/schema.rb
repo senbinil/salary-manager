@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_25_113912) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_25_115539) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -45,6 +45,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_25_113912) do
     t.integer "status", default: 1, null: false
     t.index ["email"], name: "index_accounts_on_email", unique: true, where: "(status = ANY (ARRAY[1, 2]))"
     t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
+  end
+
+  create_table "compensation_plans", force: :cascade do |t|
+    t.string "name", null: false
+    t.index ["name"], name: "index_compensation_plans_on_name", unique: true
   end
 
   create_table "countries", primary_key: "code", id: { type: :string, limit: 2 }, force: :cascade do |t|
