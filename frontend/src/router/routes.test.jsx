@@ -15,17 +15,22 @@ describe('routes', () => {
     axios.get.mockResolvedValue({ data: { id: 1, email: 'person@example.com' } })
   })
 
-  it('serves the sign-in page at the root path', () => {
+  it('serves the sign-in page at the root path', async () => {
+    axios.get.mockRejectedValue({ response: { status: 401 } })
     renderWithRouter(routes)
 
     expect(
-      screen.getByRole('heading', { level: 1, name: /sign in/i }),
+      await screen.findByRole('heading', { level: 1, name: /sign in/i }),
     ).toBeInTheDocument()
   })
 
-  it('keeps the sign-in page outside the app shell', () => {
+  it('keeps the sign-in page outside the app shell', async () => {
+    axios.get.mockRejectedValue({ response: { status: 401 } })
     renderWithRouter(routes)
 
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /sign in/i }),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('banner')).not.toBeInTheDocument()
   })
 
