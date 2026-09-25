@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_25_095129) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_25_102519) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -63,8 +63,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_25_095129) do
     t.index ["name"], name: "index_designations_on_name", unique: true
   end
 
+  create_table "employees", force: :cascade do |t|
+    t.bigint "department_id", null: false
+    t.bigint "designation_id", null: false
+    t.string "name", null: false
+    t.bigint "user_id"
+    t.index ["department_id"], name: "index_employees_on_department_id"
+    t.index ["designation_id"], name: "index_employees_on_designation_id"
+    t.index ["user_id"], name: "index_employees_on_user_id", unique: true
+  end
+
   add_foreign_key "account_login_change_keys", "accounts", column: "id"
   add_foreign_key "account_password_reset_keys", "accounts", column: "id"
   add_foreign_key "account_remember_keys", "accounts", column: "id"
   add_foreign_key "account_verification_keys", "accounts", column: "id"
+  add_foreign_key "employees", "accounts", column: "user_id"
+  add_foreign_key "employees", "departments"
+  add_foreign_key "employees", "designations"
 end
