@@ -6,7 +6,9 @@ module Api
       before_action :authenticate!
 
       def show
-        head :ok
+        account = current_account
+
+        render json: { id: account.id, email: account.email }
       end
     end
   end
