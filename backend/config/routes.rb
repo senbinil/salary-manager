@@ -11,6 +11,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       get "me", to: "me#show", as: :me
 
+      resources :compensation_plans, only: :index
       resources :countries, only: :index
       resources :departments, only: :index
       resources :designations, only: :index

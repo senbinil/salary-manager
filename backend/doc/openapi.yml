@@ -22,6 +22,8 @@ tags:
     description: Application health checks
   - name: Session
     description: The signed-in account's session state (application endpoints)
+  - name: CompensationPlans
+    description: Named bundles that attach an amount to each salary component
   - name: Countries
     description: Employment countries (ISO 3166-1 reference data)
   - name: Departments
@@ -244,6 +246,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/compensation_plans:
+    get:
+      tags: [CompensationPlans]
+      operationId: listCompensationPlans
+      summary: List compensation plans
+      description: >
+        Returns the plans a client can browse. A plan names a bundle of amounts;
+        what it pays lives on its components. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: All plans, ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompensationPlan"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -476,6 +500,20 @@ components:
           description: >
             What the account is allowed to do. A client uses it to gate screens,
             but the API enforces it independently.
+    CompensationPlan:
+      type: object
+      description: >
+        A named bundle of amounts. The name is all the list carries - what a plan
+        pays is on its components, which assign an amount to each salary
+        component, so a plan read without them says nothing about what it pays.
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          description: Compensation plan id.
+        name:
+          type: string
+          description: Plan name, unique.
     Country:
       type: object
       description: >
