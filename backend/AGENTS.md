@@ -40,8 +40,10 @@ Run `bin/ci` before considering work complete — it runs rubocop, bundler-audit
 
 ## Current State & Pitfalls
 
-- `config/routes.rb` has no app routes yet — only the `/up` health check.
-- No models or custom controllers exist yet; `ApplicationController` is the default `ActionController::API` subclass.
+- `config/routes.rb` has the `/up` health check and one app route: `GET /api/v1/me` → `Api::V1::MeController#show`. Rodauth's auth routes are **not** in this file — Rodauth's middleware serves them under the same `/api/v1` prefix, so never add a Rails `namespace`/`scope` for them.
+- App controllers live under `Api::V1::` and inherit `ApplicationController < ActionController::API`, which owns the private `current_account` helper and the `authenticate!` guard. `Api::V1::MeController` is the worked example: `before_action :authenticate!` answers with Rodauth's 401 body (`reason: "login_required"`, `error: "Please login to continue"`), which is the signal the frontend treats as signed out.
+- `authenticate!` resolves the account instead of trusting the session id, so an account closed or deleted after login reads as signed out rather than crashing on a nil account. A protected action must render an explicit payload — never the account record, which would leak `password_hash` and `status`.
+- `rodauth` is available in any controller: `rodauth-rails` includes its controller methods via `on_load(:action_controller)` (API-only apps fire that too), and `RodauthApp` runs as middleware, so it sets `env["rodauth"]` and reloads remembered logins on **every** request rather than only on auth paths.
 - PostgreSQL must be running before `bin/setup` / `bin/dev`; running specs wipes and reloads `backend_test` from `db/schema.rb`.
 - `backend/` is the app root for all Rails/Bundler commands; running them from the repo root will fail.
 - Ruby is pinned by `.ruby-version` (4.0.5); keep it in sync with the Dockerfile `RUBY_VERSION` arg.
