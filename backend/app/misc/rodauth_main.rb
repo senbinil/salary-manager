@@ -3,7 +3,11 @@ require "sequel/core"
 class RodauthMain < Rodauth::Rails::Auth
   configure do
     # List of authentication features that are loaded.
-    enable :create_account, :verify_account, :verify_account_grace_period,
+    # NOTE: :verify_account / :verify_account_grace_period are deliberately NOT
+    # enabled. New accounts are created already verified (status 2) and are
+    # logged in straight away, so there is no email-verification step before a
+    # new user's first login.
+    enable :create_account,
       :login, :logout, :remember, :json,
       :reset_password, :change_password, :change_login, :verify_login_change,
       :close_account
@@ -19,7 +23,6 @@ class RodauthMain < Rodauth::Rails::Auth
 
     # Change prefix of table and foreign key column names from default "account"
     # accounts_table :users
-    # verify_account_table :user_verification_keys
     # verify_login_change_table :user_login_change_keys
     # reset_password_table :user_password_reset_keys
     # remember_table :user_remember_keys
@@ -50,9 +53,6 @@ class RodauthMain < Rodauth::Rails::Auth
     # Store password hash in a column instead of a separate table.
     account_password_hash_column :password_hash
 
-    # Set password when creating account instead of when verifying.
-    verify_account_set_password? false
-
     # Change some default param keys.
     login_param "email"
     login_confirm_param "email-confirm"
@@ -79,7 +79,7 @@ class RodauthMain < Rodauth::Rails::Auth
 
     # ==> Flash
     # Override default flash messages.
-    # create_account_notice_flash "Your account has been created. Please verify your account by visiting the confirmation link sent to your email address."
+    # create_account_notice_flash "Your account has been created."
     # require_login_error_flash "Login is required for accessing this page"
     # login_notice_flash nil
 
@@ -135,7 +135,6 @@ class RodauthMain < Rodauth::Rails::Auth
 
     # ==> Deadlines
     # Change default deadlines for some actions.
-    # verify_account_grace_period 3.days.to_i
     # reset_password_deadline_interval Hash[hours: 6]
     # verify_login_change_deadline_interval Hash[days: 2]
     # remember_deadline_interval Hash[days: 30]
