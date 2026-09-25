@@ -105,6 +105,41 @@ RSpec.describe "Authentication", type: :request do
         expect(json_body["id"]).to eq(account.id)
         expect(json_body["email"]).to eq(email)
       end
+
+      it "exposes nothing beyond the account's id and email" do
+        get "/api/v1/me"
+
+        expect(json_body.keys).to contain_exactly("id", "email")
+      end
+    end
+
+    context "after signing out" do
+      before do
+        create(:account, :verified, email: email, password: password)
+        post "/api/v1/login", params: { email: email, password: password }, as: :json
+        post "/api/v1/logout", as: :json
+      end
+
+      it "rejects the request again" do
+        get "/api/v1/me"
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "when the account was closed after signing in" do
+      let!(:account) { create(:account, :verified, email: email, password: password) }
+
+      before do
+        post "/api/v1/login", params: { email: email, password: password }, as: :json
+        account.update!(status: :closed)
+      end
+
+      it "reports the session as signed out" do
+        get "/api/v1/me"
+
+        expect(response).to have_http_status(:unauthorized)
+      end
     end
   end
 
