@@ -15,6 +15,7 @@ Rails.application.routes.draw do
       resources :departments, only: :index
       resources :designations, only: :index
       resources :employees, only: %i[index show]
+      resources :salary_components, only: :index
     end
   end
 

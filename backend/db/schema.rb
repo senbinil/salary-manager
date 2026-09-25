@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_25_102519) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_25_113912) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -71,6 +71,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_25_102519) do
     t.index ["department_id"], name: "index_employees_on_department_id"
     t.index ["designation_id"], name: "index_employees_on_designation_id"
     t.index ["user_id"], name: "index_employees_on_user_id", unique: true
+  end
+
+  create_table "salary_components", force: :cascade do |t|
+    t.integer "category", null: false
+    t.string "name", null: false
+    t.index ["name"], name: "index_salary_components_on_name", unique: true
   end
 
   add_foreign_key "account_login_change_keys", "accounts", column: "id"
