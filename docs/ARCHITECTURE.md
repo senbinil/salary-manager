@@ -135,7 +135,6 @@ Country
 code         char(2) PK  # ISO 3166-1 alpha-2
 name         string
 currency     char(3)     # ISO 4217
-minor_unit   integer     # ISO 4217 exponent (0..4)
 ```
 
 > The seeded set also drives FX: a normalized report's pairs are the distinct currencies in this table × the configured reporting currencies (§8), so seeding scope sets FX volume.
@@ -249,7 +248,7 @@ Group by contract currency and sum. No FX is involved.
 
 ### 6.4 Normalized view
 
-A user selects a reporting currency. Each contract-currency total is converted at full precision, **rounded to the reporting currency's minor unit**, and then summed (§8). Rates are captured once per month, so every load within a month produces identical normalized figures. A currency whose pair is missing shows no figure, and the total is flagged rather than under-counted (§8).
+A user selects a reporting currency. Each contract-currency total is converted at full precision, **rounded to the reporting currency's ISO 4217 exponent**, and then summed (§8). Rates are captured once per month, so every load within a month produces identical normalized figures. A currency whose pair is missing shows no figure, and the total is flagged rather than under-counted (§8).
 
 ### 6.5 Nothing is frozen — by design
 
@@ -284,6 +283,7 @@ Rules:
 - **Pair set:** every **distinct currency in the seeded `Country` table** × every **configured reporting currency**, excluding identity pairs (`C → C` is 1.0 and needs no row). The set is fixed and known in advance — it does not depend on which employees are in scope.
 - **Reporting currencies are a configured list**, not something derived from compensation data. The set is system configuration, not a property of any country or contract.
 - **Capture point:** rates are fetched **once per calendar month, on the first dashboard load of that month**, and stored per pair keyed to the month (§5.8). Every later load in that month reuses them, so a month's normalized report is identical for every user and every page load.
+- **Rounding:** a converted amount is rounded to the reporting currency's ISO 4217 exponent before the totals are summed — the exponent is reporting configuration, not a `Country` attribute (§5.4).
 - **No live fallback.** A conversion uses **only** a stored snapshot for `(period_month, pair)`. A missing pair shows **no figure** in the normalized view, flagged _rate unavailable_; the report total is shown with a flag `N currencies unavailable`. There is no estimated branch and no fabricated rate.
 - A reporting currency registered mid-month starts being captured at the **next** load; until then it shows no normalized figure.
 
