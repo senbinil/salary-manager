@@ -127,7 +127,7 @@ Constraints:
 - Partial unique index: `UNIQUE (employee_id) WHERE end_date IS NULL` — at most one open-ended contract per employee.
 - Application-level check: contract date ranges for an employee must not overlap.
 
-### 5.4 Country (seeded reference)
+### 5.4 Country (reference data)
 
 ```
 Country
@@ -137,7 +137,7 @@ name         string
 currency     char(3)     # ISO 4217
 ```
 
-> The seeded set also drives FX: a normalized report's pairs are the distinct currencies in this table × the configured reporting currencies (§8), so seeding scope sets FX volume.
+> The countries in this table also drive FX: a normalized report's pairs are the distinct currencies in it × the configured reporting currencies (§8), so which countries exist here sets FX volume.
 
 ### 5.5 Compensation Plan
 
@@ -280,7 +280,7 @@ FX is **outside** setup entirely.
 
 Rules:
 
-- **Pair set:** every **distinct currency in the seeded `Country` table** × every **configured reporting currency**, excluding identity pairs (`C → C` is 1.0 and needs no row). The set is fixed and known in advance — it does not depend on which employees are in scope.
+- **Pair set:** every **distinct currency in the `Country` table** × every **configured reporting currency**, excluding identity pairs (`C → C` is 1.0 and needs no row). The set is fixed and known in advance — it does not depend on which employees are in scope.
 - **Reporting currencies are a configured list**, not something derived from compensation data. The set is system configuration, not a property of any country or contract.
 - **Capture point:** rates are fetched **once per calendar month, on the first dashboard load of that month**, and stored per pair keyed to the month (§5.8). Every later load in that month reuses them, so a month's normalized report is identical for every user and every page load.
 - **Rounding:** a converted amount is rounded to the reporting currency's ISO 4217 exponent before the totals are summed — the exponent is reporting configuration, not a `Country` attribute (§5.4).
