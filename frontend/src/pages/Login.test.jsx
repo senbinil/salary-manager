@@ -172,4 +172,45 @@ describe('Login', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'))
   })
+
+  // The password starts masked and the toggle is the only way to read it back.
+  // The button's name says what the next click does, so it flips with the state.
+  describe('password visibility', () => {
+    it('keeps the password masked until the toggle is used', async () => {
+      renderWithRouter(loginRoutes)
+
+      const user = userEvent.setup()
+
+      expect(screen.getByLabelText(/^password/i)).toHaveAttribute(
+        'type',
+        'password',
+      )
+
+      await user.click(screen.getByRole('button', { name: /show password/i }))
+
+      expect(screen.getByLabelText(/^password/i)).toHaveAttribute(
+        'type',
+        'text',
+      )
+      expect(
+        screen.getByRole('button', { name: /hide password/i }),
+      ).toBeInTheDocument()
+    })
+
+    it('masks the password again when toggled back', async () => {
+      renderWithRouter(loginRoutes)
+
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /show password/i }))
+      await user.click(screen.getByRole('button', { name: /hide password/i }))
+
+      expect(screen.getByLabelText(/^password/i)).toHaveAttribute(
+        'type',
+        'password',
+      )
+      expect(
+        screen.getByRole('button', { name: /show password/i }),
+      ).toBeInTheDocument()
+    })
+  })
 })
