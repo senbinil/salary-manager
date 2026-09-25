@@ -159,10 +159,11 @@ id                    bigint PK
 compensation_plan_id  bigint FK → compensation_plans
 salary_component_id   bigint FK → salary_components
 amount                decimal(16,4)   # in contract currency
-frequency             enum: monthly
 ```
 
 > No `currency` field — the amount is always in the owning contract's currency (§3).
+
+> No `frequency` field either — compensation amounts are monthly system-wide (principle 6), so a one-value column would only restate an assumption the system already makes.
 
 > **Edited in place.** Amounts are not effective-dated, so changing an amount changes what past reports show (§6.5).
 

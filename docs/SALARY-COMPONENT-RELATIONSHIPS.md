@@ -40,7 +40,7 @@ The **amount** lives on the assignment that uses the word — `CompensationPlanC
 ```
 CompensationPlanComponent
 -------------------------
-id, compensation_plan_id, salary_component_id, amount, frequency
+id, compensation_plan_id, salary_component_id, amount
 ```
 
 ---
@@ -50,7 +50,7 @@ id, compensation_plan_id, salary_component_id, amount, frequency
 | Entity                      | What it adds          | Meaning                      |
 | --------------------------- | --------------------- | ---------------------------- |
 | `SalaryComponent`           | `name`, `category`    | "What is it called?"         |
-| `CompensationPlanComponent` | `amount`, `frequency` | "How much do we pay for it?" |
+| `CompensationPlanComponent` | `amount`              | "How much do we pay for it?" |
 
 - `SalaryComponent` = **the word** ("Basic Salary")
 - `CompensationPlanComponent` = **the paycheck amount** for that word
