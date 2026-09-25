@@ -41,49 +41,16 @@ paths:
       operationId: createAccount
       summary: Create a new account
       description: >
-        Registers a new account and queues a verification email. The account
-        must be verified before it can log in (see `verify-account`).
+        Registers a new account. Account verification is disabled: the account is
+        created already verified and the session is logged in immediately, so no
+        verification email is sent and no verification step is required before
+        logging in.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateAccountRequest"
-      responses:
-        "200":
-          $ref: "#/components/responses/Success"
-        "422":
-          $ref: "#/components/responses/Unprocessable"
-
-  /api/v1/verify-account:
-    post:
-      tags: [Auth]
-      operationId: verifyAccount
-      summary: Verify an account
-      description: Verifies a newly created account using the token emailed during registration.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/VerifyAccountRequest"
-      responses:
-        "200":
-          $ref: "#/components/responses/Success"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-
-  /api/v1/verify-account-resend:
-    post:
-      tags: [Auth]
-      operationId: resendAccountVerification
-      summary: Resend the account verification email
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ResendVerificationRequest"
       responses:
         "200":
           $ref: "#/components/responses/Success"
@@ -285,7 +252,7 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
     Forbidden:
-      description: Account is not allowed to perform the action (e.g. unverified)
+      description: Account is not allowed to perform the action (e.g. a closed account)
       content:
         application/json:
           schema:
@@ -341,20 +308,6 @@ components:
           format: email
         password:
           type: string
-    VerifyAccountRequest:
-      type: object
-      required: [key]
-      properties:
-        key:
-          type: string
-          description: Verification token from the verification email.
-    ResendVerificationRequest:
-      type: object
-      required: [email]
-      properties:
-        email:
-          type: string
-          format: email
     PasswordResetRequest:
       type: object
       required: [email]
