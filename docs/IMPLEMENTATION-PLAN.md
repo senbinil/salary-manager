@@ -142,13 +142,13 @@ Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate
 **Goal.** Land the source of truth and the rule that picks *the* active contract.
 
 - Migration:
-  - `employment_contracts`: `id`, `employee_id` FK (not null), `country_code` FK (not null), `currency char(3)` (not null), `pay_frequency enum: monthly`, `compensation_plan_id` FK, `start_date` (not null), `end_date` (nullable).
+  - `employment_contracts`: `id`, `employee_id` FK (not null), `country_code` FK (not null), `currency char(3)` (not null), `compensation_plan_id` FK (not null), `start_date` (not null), `end_date` (nullable). No `pay_frequency` — amounts are monthly system-wide (principle 6), so the column would only restate that.
   - `CHECK (end_date IS NULL OR end_date > start_date)`.
   - Partial unique index `UNIQUE (employee_id) WHERE end_date IS NULL` (one open-ended contract per employee).
 - `EmploymentContract` model: `belongs_to :country, :compensation_plan, :employee`; default `currency` from `country.currency` on create (§3); application-level non-overlap validation.
 - Resolution service (a PORO, e.g. `ActiveContract`) with the §7 predicates — `active_on?(date)`, `covers?(period)` — fully spec'd, since reporting in Phases 6–7 depends on it.
-- Endpoints: contracts CRUD (nested under `/api/v1/employees/:id/contracts` or flat `/api/v1/contracts` — pick one in the slice).
-- **Done when:** the partial unique index + CHECK hold, non-overlap is validated, the resolution service is green, CRUD works.
+- Endpoints (read-only for now, like Phases 1, 3, and 4; management CRUD is Phase 8): read an employee's contracts. Nested under `/api/v1/employees/:id/contracts` or flat `/api/v1/contracts` — pick one in the slice. Writes are deferred with the rest of the CRUD, so termination (setting `end_date`) arrives with them.
+- **Done when:** the partial unique index + CHECK hold, non-overlap is validated, the resolution service is green, the read endpoint returns its list, and specs are green.
 
 ---
 

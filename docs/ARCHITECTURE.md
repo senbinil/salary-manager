@@ -11,7 +11,7 @@ This document supersedes the v0.4 design, whose full text is preserved at [`arch
 3. **One contract currency.** All compensation amounts are expressed in it, and component amounts carry no currency of their own.
 4. **FX belongs to reporting only** — never to setup.
 5. **Salary components are reusable across countries** (shared vocabulary).
-6. **Compensation amounts are monthly** (`pay_frequency = monthly`).
+6. **Compensation amounts are monthly.** No `pay_frequency` column exists — one value would only restate this principle.
 7. **Nothing is frozen.** There is no payroll run and no persisted payroll result; reporting is a live projection over current contracts and plans (§6).
 8. **Money is stored at a fixed scale** — `decimal(16,4)` — and displayed rounded to the currency's ISO 4217 minor unit.
 
@@ -115,15 +115,14 @@ id                    bigint PK
 employee_id           bigint FK → employees, not null
 country_code          string FK → countries, not null
 currency              char(3), not null       # defaults to country.currency, overridable
-pay_frequency         enum: monthly
-compensation_plan_id  bigint FK → compensation_plans
+compensation_plan_id  bigint FK → compensation_plans, not null
 start_date            date, not null
 end_date              date, nullable           # null = open-ended
 ```
 
 Constraints:
 
-- `CHECK (end_date IS NULL OR end_date > start_date)`
+- `CHECK (end_date IS NULL OR end_date > start_date)` — a contract cannot start and end on the same day.
 - Partial unique index: `UNIQUE (employee_id) WHERE end_date IS NULL` — at most one open-ended contract per employee.
 - Application-level check: contract date ranges for an employee must not overlap.
 
