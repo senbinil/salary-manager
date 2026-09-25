@@ -63,9 +63,9 @@ The design's `User` (name, email, role) and Rodauth's `accounts` table describe 
 
 Phase 2 is written for **option A**; note the delta if B is chosen.
 
-### D0.2 — Country seed source
+### D0.2 — Country data source
 
-`Country` (`code`, `name`, `currency`) is seeded reference data. Decide the source: a committed `db/seeds` list of ISO 3166-1 alpha-2 + ISO 4217 currency pairs (recommended), or a one-time import. Scope is small and stable, so a committed list is preferred over a runtime fetch.
+`Country` (`code`, `name`, `currency`) is reference data that everything else keys off, and nothing populates it yet — Phase 1 ships the table and its read endpoint, and Phase 8 lists countries as read-only. Decide the source: a committed `db/seeds` list of ISO 3166-1 alpha-2 + ISO 4217 currency pairs (recommended), or a one-time import. Scope is small and stable, so a committed list is preferred over a runtime fetch.
 
 ### D0.3 — Reporting-currency configuration
 
@@ -89,10 +89,10 @@ Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate
   - `countries`: `code char(2) PK`, `name`, `currency char(3)`.
   - `departments`: `id`, `name`.
   - `designations`: `id`, `name`.
-- Seed `countries` per D0.2 (committed list).
+- Populating `countries` is deferred to **D0.2** — this phase ships the table empty, and the read endpoints return whatever it holds.
 - Models + FactoryBot factories + model specs (presence/uniqueness as applicable).
 - Endpoints (read-only for now; management CRUD is Phase 8): `GET /api/v1/countries`, `GET /api/v1/departments`, `GET /api/v1/designations`.
-- **Done when:** tables exist, seeds load idempotently, the three endpoints return their lists, specs green.
+- **Done when:** the three tables exist, the three endpoints return their lists, and specs are green — the endpoint specs build their rows with factories, so nothing depends on seed data.
 
 ---
 
@@ -169,7 +169,7 @@ Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate
   - `exchange_rate_snapshots`: `id`, `period_month` (first day of month), `from_currency`, `to_currency`, `rate decimal(16,10)`, `rate_date`, `source`. Unique `(period_month, from_currency, to_currency)`.
 - Reporting-currency config per **D0.3**.
 - **Decide the ISO 4217 exponent source** used to round the normalized report — it is no longer a `Country` attribute (§5.4), so this phase must state where the exponent comes from.
-- Rate capture service: on the first dashboard load of a month, compute the pair set (distinct seeded `Country` currencies × configured reporting currencies, minus identity pairs) and fill missing pairs via the **D0.4** adapter. Reuse for the rest of the month; no live fallback.
+- Rate capture service: on the first dashboard load of a month, compute the pair set (distinct `Country` currencies × configured reporting currencies, minus identity pairs) and fill missing pairs via the **D0.4** adapter. Reuse for the rest of the month; no live fallback.
 - Normalized report: convert each contract-currency total at full precision, round to the target currency's ISO 4217 exponent, then sum; a missing pair shows **no figure** and the total carries a flag (`N currencies unavailable`) — never an estimate.
 - Endpoint: `GET /api/v1/reports?currency=USD` (normalized), alongside the Phase 6 native shape.
 - **Done when:** first-load capture fills the month's pairs once, repeated loads reuse them, a missing pair flags instead of fabricating, rounding matches ISO 4217, specs green.
