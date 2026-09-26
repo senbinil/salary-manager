@@ -1,24 +1,30 @@
-# README
+# Backend
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+The backend is an API-only Rails application using PostgreSQL, RSpec, and Rodauth cookie-session authentication. Run Rails and Bundler commands from this directory.
 
-Things you may want to cover:
+## Setup and run
 
-* Ruby version
+Start PostgreSQL, then run:
 
-* System dependencies
+```sh
+bin/setup --skip-server
+bin/dev
+```
 
-* Configuration
+The API is available at `http://localhost:3000`. Application endpoints use `/api/v1`; Rodauth serves authentication routes under the same prefix.
 
-* Database creation
+## Current API
 
-* Database initialization
+The application exposes `GET /api/v1/me`, read endpoints for employees and reference data, and nested employee employment-contract index/show endpoints. Contract responses include employee-specific compensation with the plan tag and component amounts. See [`doc/openapi.yml`](./doc/openapi.yml) for the full route and schema reference.
 
-* How to run the test suite
+The model supports nested component attributes on `EmployeeCompensation`, but no HTTP contract write endpoint currently accepts them. The employee dashboard, payroll, and reporting endpoints are not implemented.
 
-* Services (job queues, cache servers, search engines, etc.)
+## Checks
 
-* Deployment instructions
+```sh
+bundle exec rspec
+bin/rubocop
+bin/ci
+```
 
-* ...
+`bin/ci` runs setup, RuboCop, security audits, RSpec, and seed verification. See [`AGENTS.md`](./AGENTS.md) for backend-specific conventions and operational notes.

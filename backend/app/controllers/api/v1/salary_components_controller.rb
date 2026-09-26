@@ -1,6 +1,6 @@
 module Api
   module V1
-    # Lists the salary components a compensation plan can attach an amount to.
+    # Lists reusable salary component definitions referenced by employee compensation.
     class SalaryComponentsController < ApplicationController
       before_action :authenticate!
 

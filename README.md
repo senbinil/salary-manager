@@ -1,56 +1,40 @@
 # Salary Manager
 
-Salary and compensation management: define how an organization compensates its employees, and report that compensation across countries and currencies. The **employment contract** is the source of truth — one active contract per employee, one contract currency, and a compensation plan that assigns amounts to reusable salary components. Reporting is a live projection over current contracts and plans (no payroll run, no frozen results).
+Salary Manager is a monorepo for managing employee contracts and employee-specific compensation. The backend is a Rails API; the frontend is a React application.
 
-## What the app does
+## Current state
 
-**Implemented today**
+- The backend provides cookie-session authentication and read endpoints for employees, reference data, and nested employment contracts.
+- Each employment contract has one `EmployeeCompensation`. Compensation plans are reusable filter tags; component amounts belong to that contract's compensation and use the contract currency.
+- `EmployeeCompensation` supports nested component assignment at the model layer. There are no HTTP contract create/update endpoints.
+- The frontend provides sign-in, a session-gated shell, and a placeholder Home page. The employee dashboard and reporting UI are future work.
+- There is no payroll run, aggregate report endpoint, reporting-month selector, or currency-normalization feature.
 
-- Cookie-session authentication under `/api/v1` (create account, sign in, sign out, reset password, change login, close account), provided by [Rodauth](https://rodauth.jeremyevans.net).
-- `GET /api/v1/me` — the session probe the frontend uses to gate signed-in screens.
-- A React shell: sign-in page, an authenticated dashboard behind a session gate, and sign-out from the app bar.
+See the [OpenAPI document](./backend/doc/openapi.yml) for current HTTP routes and response schemas.
 
-**Designed, not yet built**
+## Run locally
 
-The compensation domain — employees, contracts, compensation plans/components, and cross-currency reporting — is fully specified but not implemented. See [`docs/`](./docs/README.md).
+Start PostgreSQL, then run the backend from `backend/`:
+
+```sh
+bin/setup --skip-server
+bin/dev
+```
+
+In another terminal, start the frontend from `frontend/`:
+
+```sh
+npm ci
+npm run dev
+```
+
+Backend verification uses `cd backend && bin/ci`. Frontend checks use `cd frontend && npm run lint`, `npm run test:run`, and `npm run build`.
 
 ## Documentation
 
-| Document | What it means |
-| --- | --- |
-| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | **Canonical design (v0.5).** Domain model, entity definitions, reporting, currency rule, active-contract resolution, and FX handling. |
-| [`docs/IMPLEMENTATION-PLAN.md`](./docs/IMPLEMENTATION-PLAN.md) | Phased plan that sequences the design into ordered build phases, with the decisions to settle first. |
-| [`docs/SALARY-COMPONENT-RELATIONSHIPS.md`](./docs/SALARY-COMPONENT-RELATIONSHIPS.md) | Why `SalaryComponent` (the word) and `CompensationPlanComponent` (the amount) are two entities. |
-| [`docs/README.md`](./docs/README.md) | Index, version lineage (v0.1 → v0.5), and the non-normative archive. |
-| [`backend/AGENTS.md`](./backend/AGENTS.md) · [`frontend/AGENTS.md`](./frontend/AGENTS.md) | Per-app conventions, commands, and pitfalls for agents. |
-
-## API documentation
-
-The HTTP API is specified as OpenAPI 3.0 in [`backend/doc/openapi.yml`](./backend/doc/openapi.yml).
-
-Rendered, browsable docs are built from it and deployed to GitHub Pages: **<https://senbinil.github.io/salary-manager/>** (rebuilt on every push to `main` that touches `backend/doc/`).
-
-## Stack
-
-Monorepo: `backend/` (API) and `frontend/` (UI).
-
-| App | Stack |
-| --- | --- |
-| `backend/` | Ruby 4.0.5 · Rails 8.1.3.1 (API-only) · PostgreSQL · Rodauth (cookie-session auth) · Rack::Cors · Solid Queue / Cache / Cable · RSpec + FactoryBot · Puma, deployed with Kamal |
-| `frontend/` | Node 24 · React 19 · Vite · React Router 8 (data mode) · TanStack Query v5 · axios · MUI v9 · lucide-react · Vitest + Testing Library |
-
-## CI
-
-| Workflow | Runs when | Checks |
-| --- | --- | --- |
-| `backend.yml` | `backend/**` changes | Brakeman + bundler-audit security scans, RuboCop lint, RSpec tests (Postgres) |
-| `frontend.yml` | `frontend/**` changes | ESLint, Vitest coverage, Vite build |
-| `docs.yml` | `backend/doc/**` changes on `main` | Builds `openapi.yml` with Redocly, deploys to GitHub Pages |
-
-## Repository layout
-
-```
-backend/    Rails API — auth (Rodauth), /api/v1 endpoints, OpenAPI spec in doc/
-frontend/   React SPA — sign-in, authenticated shell, dashboard gate
-docs/       Design documentation (canonical v0.5 + implementation plan + archive)
-```
+- [Architecture v0.6](./docs/ARCHITECTURE.md) — current model and behavior.
+- [Implementation plan](./docs/IMPLEMENTATION-PLAN.md) — completed model/API sequence and future dashboard slice.
+- [Salary component relationships](./docs/SALARY-COMPONENT-RELATIONSHIPS.md) — plan tags, shared component definitions, and employee-specific amounts.
+- [ADR-0001](./docs/decisions/ADR-0001-employee-specific-compensation.md) — rationale and alternatives for the compensation model.
+- [Documentation index and version history](./docs/README.md).
+- [Backend guidance](./backend/AGENTS.md) and [frontend guidance](./frontend/AGENTS.md).

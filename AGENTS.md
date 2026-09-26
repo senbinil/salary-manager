@@ -28,4 +28,4 @@ Area-specific commands, conventions, and pitfalls live in each app's `AGENTS.md`
 
 ## Documentation
 
-- `README.md` (root) and each app's `README.md` are placeholders/stubs. Update them as real documentation lands rather than duplicating content in agent files.
+- Root and app-level `README.md` files are user-facing project documentation. Keep setup and current feature descriptions accurate; put agent-specific commands and conventions in the scoped `AGENTS.md` files.
