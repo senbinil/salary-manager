@@ -10,7 +10,9 @@ Salary Manager is a monorepo for managing employee contracts and employee-specif
 - The frontend provides sign-in, a session-gated shell, and a placeholder Home page. The employee dashboard and reporting UI are future work.
 - There is no payroll run, aggregate report endpoint, reporting-month selector, or currency-normalization feature.
 
-See the [OpenAPI document](./backend/doc/openapi.yml) for current HTTP routes and response schemas.
+## API documentation
+
+The [OpenAPI 3.0 source](./backend/doc/openapi.yml) defines current HTTP routes and response schemas. Browse the [rendered API documentation](https://senbinil.github.io/salary-manager/); GitHub Pages publishes it from `main` when the API spec, docs build configuration, or workflow changes, and it can also be rebuilt manually.
 
 ## Run locally
 
@@ -29,6 +31,27 @@ npm run dev
 ```
 
 Backend verification uses `cd backend && bin/ci`. Frontend checks use `cd frontend && npm run lint`, `npm run test:run`, and `npm run build`.
+
+## Stack
+
+| App | Main technologies |
+| --- | --- |
+| Backend | Ruby 4.0.5, Rails 8.1, PostgreSQL, Rodauth, RSpec, FactoryBot |
+| Frontend | Node 24, React 19, Vite 8, React Router 8, TanStack Query, axios, MUI, Vitest, React Testing Library |
+
+## CI
+
+GitHub Actions runs checks when changes touch each app:
+
+- **Backend** (`backend.yml`): Brakeman, bundler-audit, RuboCop, and RSpec with PostgreSQL.
+- **Frontend** (`frontend.yml`): ESLint, Vitest coverage, and the Vite production build.
+- **API docs** (`docs.yml`): builds and publishes the OpenAPI documentation to GitHub Pages from `main` when its source or build configuration changes; it also supports a manual run.
+
+## Repository layout
+
+- `backend/` — Rails API, backend specs, and the OpenAPI source at `backend/doc/openapi.yml`.
+- `frontend/` — React single-page application and frontend specs.
+- `docs/` — current architecture and implementation documents, decision records, and archived documentation.
 
 ## Documentation
 
