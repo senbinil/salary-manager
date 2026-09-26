@@ -8,7 +8,7 @@ module Api
         employee = find_employee
         return unless employee
 
-        contracts = EmploymentContract.where(employee_id: employee.id).order(:start_date)
+        contracts = employee.employment_contracts.order(:start_date)
         render json: contracts.map { |contract| contract_json(contract) }
       end
 
@@ -16,7 +16,7 @@ module Api
         employee = find_employee
         return unless employee
 
-        contract = EmploymentContract.find_by(id: params[:id], employee_id: employee.id)
+        contract = employee.employment_contracts.find_by(id: params[:id])
         return render json: { error: "Employment contract not found" }, status: :not_found unless contract
 
         render json: contract_json(contract)
