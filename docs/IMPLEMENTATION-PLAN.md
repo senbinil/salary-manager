@@ -34,7 +34,7 @@ flowchart LR
     P3[P3: employees]
     P4[P4: components & plans]
     P5[P5: contracts]
-    P6[P6: native report]
+    P6[P6: contract compensation payload]
     P7[P7: FX + normalized]
     P8[P8: FE management]
     P9[P9: FE dashboard]
@@ -45,7 +45,7 @@ flowchart LR
     P4 & P5 --> P6
     P1 & P6 --> P7
     P3 & P4 & P5 --> P8
-    P6 & P7 --> P9
+    P6 & P7 & P8 --> P9
 ```
 
 ---
@@ -131,7 +131,7 @@ A compensation plan may assign each `SalaryComponent` only once: enforce `UNIQUE
   - `compensation_plans`: `id`, `name`.
   - `compensation_plan_components`: `id`, `compensation_plan_id` FK, `salary_component_id` FK, `amount decimal(16,4)`. No `frequency` — amounts are monthly system-wide, so the column would only restate that. Apply the **D0.5** uniqueness choice.
 - Models: `SalaryComponent`, `CompensationPlan` (`has_many :compensation_plan_components`), `CompensationPlanComponent` (amount presence/non-negative; **no currency column** — §3).
-- Endpoints (read-only for now, like Phase 1; management CRUD is Phase 8): `GET /api/v1/salary_components` and `GET /api/v1/compensation_plans`. A plan's `show` (embedding its components) and the nested assignment path (e.g. `POST /api/v1/compensation_plans/:id/compensation_plan_components`) are deferred to later slices.
+- Endpoints (read-only for now, like Phase 1; management CRUD is Phase 8): `GET /api/v1/salary_components` and `GET /api/v1/compensation_plans`. A plan's `show` (embedding its components) and the nested assignment path (e.g. `POST /api/v1/compensation_plans/:id/compensation_plan_components`) are deferred. Phase 6 carries the needed component details with contract responses so the dashboard and employee contract view share the same data.
 - No starter vocabulary is seeded — `db/seeds.rb` stays a stub, so specs and demos build their rows with factories.
 - **Done when:** the three tables exist with their constraints enforced, the read endpoints return their lists, and specs are green.
 
@@ -139,47 +139,46 @@ A compensation plan may assign each `SalaryComponent` only once: enforce `UNIQUE
 
 ## Phase 5 — Employment Contracts & active-contract resolution
 
-**Goal.** Land the source of truth and the rule that picks *the* active contract.
+**Goal.** Land the source of truth and the reusable active-contract lookup rule.
 
 - Migration:
   - `employment_contracts`: `id`, `employee_id` FK (not null), `country_code` FK (not null), `currency char(3)` (not null), `compensation_plan_id` FK (not null), `start_date` (not null), `end_date` (nullable). No `pay_frequency` — amounts are monthly system-wide (principle 6), so the column would only restate that.
   - `CHECK (end_date IS NULL OR end_date > start_date)`.
   - Partial unique index `UNIQUE (employee_id) WHERE end_date IS NULL` (one open-ended contract per employee).
 - Models: `Employee.has_many :employment_contracts`; `EmploymentContract.belongs_to :employee, :country, :compensation_plan`; default `currency` from `country.currency` on create (§3); application-level non-overlap validation.
-- Active-contract resolution, split by which question is being asked:
-  - `EmploymentContract.active(date = Date.current)` — §7's **point rule**: the date falls between `start_date` and `end_date`, both ends included, null `end_date` open-ended. This is the dashboard's question, so it defaults to today.
-  - Period-overlap report scoping is out of scope for v0.5 and may be reconsidered during future reporting design (§9). Phase 6 selection rules require review before implementation; no replacement rule is chosen here.
+- Active-contract resolution is separate from dashboard employee selection:
+  - `EmploymentContract.active(date = Date.current)` — §7's **point rule**: the date falls between `start_date` and `end_date`, both ends included, null `end_date` open-ended. It defaults to today for callers that need an as-of contract lookup.
+  - The dashboard lists all employees and uses the date-independent contract list for drill-down; active-contract status does not determine which employees appear. Period-overlap scoping matters only if future work adds historical-period reporting (§9).
   - No `ActiveContract` PORO is planned for v0.5. Revisit that choice only if future reporting requirements need it.
 - Endpoints (read-only for now, like Phases 1, 3, and 4; management CRUD is Phase 8): `GET /api/v1/employees/:employee_id/employment_contracts` and `GET /api/v1/employees/:employee_id/employment_contracts/:id`. Both actions are nested and scoped to the employee. Writes are deferred with the rest of the CRUD, so termination (setting `end_date`) arrives with them.
 - **Done when:** the partial unique index + CHECK hold, non-overlap is validated, `active` answers the point rule, the read endpoint returns its list, and specs are green.
 
 ---
 
-## Phase 6 — Native reporting (backend)
+## Phase 6 — Contract compensation payload (backend)
 
-**Goal.** The first report: live projection, no FX.
+**Goal.** Make contract compensation available to the employee dashboard without an aggregate report endpoint.
 
-This phase requires design review before implementation. The report period, employee selection, and API shape below are draft and not settled.
-
-- Review the reporting design before implementation, including how the report selects employees. Period-overlap scoping is out of scope for v0.5 and may be considered in future work; no replacement selection rule is chosen here.
-- Report service (PORO, e.g. `CompensationReport`): use the employee scope settled in the design review, sum `earning` + `allowance` `CompensationPlanComponent` amounts per selected contract, and group by contract currency.
-- No gross/net, no payable, no `contribution` (§6.2) — the only figure is total compensation per currency.
-- Endpoint: `GET /api/v1/reports` with a period parameter; returns the native view (§6.3). Shape is a slice decision (grouped by currency, with employee-level detail for drill-down).
-- **Done when:** the native report is correct for seeded fixtures (including an employee with a `contribution` component that must be excluded), specs green. No FX anywhere.
+- The dashboard lists all employees and supports combined filters over employee and contract fields. The employee list is not limited by contract activity and has no reporting-month or reporting-period selector.
+- Extend the existing nested employment-contract index and show responses so each contract carries its assigned plan's component details (amount, component name, and category). Keep the exact JSON nesting explicit in the API slice and OpenAPI documentation.
+- Employee drill-down opens that employee's contract records and shows the selected contract's components using the same presentation as the employee contract view.
+- Do not add an aggregate report endpoint or backend report service. Settle the exact filter set and how the dashboard loads employee contract data in the API and UI slices.
+- **Done when:** contract responses expose assigned component details; all employees appear in the dashboard; combined filters work together; employee drill-down shows the contract component breakdown; request and UI specs are green.
 
 ---
 
-## Phase 7 — FX & normalized reporting
+## Phase 7 — FX & normalized display
 
-**Goal.** Rate snapshots + the normalized view, exactly per §8.
+**Goal.** Capture FX rate snapshots and support normalized contract compensation display, per §8.
 
 - Migration:
   - `exchange_rate_snapshots`: `id`, `period_month` (first day of month), `from_currency`, `to_currency`, `rate decimal(16,10)`, `rate_date`, `source`. Unique `(period_month, from_currency, to_currency)`.
 - Reporting-currency config per **D0.3**.
-- **Decide the ISO 4217 exponent source** used to round the normalized report — it is no longer a `Country` attribute (§5.4), so this phase must state where the exponent comes from.
-- Rate capture service: on the first dashboard load of a month, compute the pair set (distinct `Country` currencies × configured reporting currencies, minus identity pairs) and fill missing pairs via the **D0.4** adapter. Reuse for the rest of the month; no live fallback.
-- Normalized report: convert each contract-currency total at full precision, round to the target currency's ISO 4217 exponent, then sum; a missing pair shows **no figure** and the total carries a flag (`N currencies unavailable`) — never an estimate.
-- Endpoint: `GET /api/v1/reports?currency=USD` (normalized), alongside the Phase 6 native shape.
+- **Decide the ISO 4217 exponent source** used to round normalized displayed values — it is no longer a `Country` attribute (§5.4), so this phase must state where the exponent comes from.
+- Settle the FX pair source so it covers currencies present in displayed contract data. A contract currency may override `Country.currency` (§3).
+- Rate capture service: on the first dashboard load of a month, compute the settled source's currency set × configured reporting currencies, excluding identity pairs, and fill missing pairs via the **D0.4** adapter. Reuse for the rest of the month; no live fallback.
+- Normalized dashboard view: convert the compensation shown with each contract using the captured pair rate and round to the target currency's ISO 4217 exponent; a missing pair shows **no converted figure** for the affected contract and marks the currency unavailable — never estimate.
+- No aggregate report endpoint. The dashboard converts contract compensation using captured rates; settle how the frontend receives those rates in the Phase 7 API slice.
 - **Done when:** first-load capture fills the month's pairs once, repeated loads reuse them, a missing pair flags instead of fabricating, rounding matches ISO 4217, specs green.
 
 ---
@@ -189,7 +188,7 @@ This phase requires design review before implementation. The report period, empl
 **Goal.** The screens HR needs to maintain reference data and records, wired to Phases 1–5.
 
 - New paths in `src/router/paths.js`, route entries in `src/router/routes.js` under `RootLayout` (so the shell + auth gate already apply), each gated by role where the backend enforces one.
-- Screens, one slice each: departments & designations, countries (read-only), employees, salary components, plans (+ component assignment), contracts. Reuse the existing MUI theme, `lucide-react` icons, and the `errorMessage()` convention from `src/api/errorMessage.js`.
+- Screens, one slice each: departments & designations, countries (read-only), employees, salary components, plans (+ component assignment), contracts. The contract detail view presents its plan component breakdown for reuse by the Phase 9 employee drill-down. Reuse the existing MUI theme, `lucide-react` icons, and the `errorMessage()` convention from `src/api/errorMessage.js`.
 - **Done when:** each screen renders real API data through TanStack Query, mutations round-trip, and the jsdom specs pass (`npm run test:run`).
 
 ---
@@ -198,7 +197,7 @@ This phase requires design review before implementation. The report period, empl
 
 **Goal.** The dashboard that consumes Phases 6–7.
 
-- A reporting page with the native view (grouped by currency) and a normalized toggle with a reporting-currency selector, rendering the missing-pair flag from Phase 7.
+- A dashboard listing all employees with combined filters over employee and contract fields. Employee drill-down opens the contract records and the same compensation plan component breakdown as the employee contract view. There is no report-period selector or aggregate report endpoint; normalized currency display uses Phase 7 rates.
 - Read-only: no run, no freeze, no audit trail — reflect that the numbers are live projections (§6.5).
 - **Done when:** the dashboard reflects backend fixtures, currency selection drives the normalized view, flag states render, specs green.
 

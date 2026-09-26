@@ -1,7 +1,7 @@
 # The source of truth for how an employee is paid (§1): one currency, one
 # compensation plan, and the date range they apply to. An end date is how a
 # contract terminates - there is no delete. Nothing is effective-dated, so editing
-# a contract changes what past reports show (§6.5).
+# a contract changes the compensation shown by the dashboard on its next read (§6.5).
 class EmploymentContract < ApplicationRecord
   belongs_to :employee
   # Country is keyed by its ISO code rather than an id, so the foreign key is
@@ -10,10 +10,9 @@ class EmploymentContract < ApplicationRecord
   belongs_to :compensation_plan
 
   # §7: active means the date falls between start_date and end_date, both ends
-  # included, and a null end_date runs on. Defaults to today - the dashboard's
-  # question - with the parameter kept so the same rule can answer an as-of
-  # question without a second scope. This is the v0.5 dashboard point check;
-  # report period selection is outside v0.5 and remains for Phase 6 review.
+  # included, and a null end_date runs on. Defaults to today, with the parameter
+  # kept so callers can answer an as-of question without a second scope. This
+  # lookup does not determine which employees appear on the dashboard.
   scope :active, ->(date = Date.current) {
     where("start_date <= ?", date).where("end_date IS NULL OR end_date >= ?", date)
   }

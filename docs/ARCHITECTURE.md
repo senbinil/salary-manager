@@ -138,7 +138,7 @@ name         string
 currency     char(3)     # ISO 4217
 ```
 
-> The countries in this table also drive FX: a normalized report's pairs are the distinct currencies in it × the configured reporting currencies (§8), so which countries exist here sets FX volume.
+> A contract may override `Country.currency` (§3), so countries alone may not describe every currency used by compensation. Phase 7 must settle an FX pair source that covers displayed contract data (§8).
 
 ### 5.5 Compensation Plan
 
@@ -166,7 +166,7 @@ amount                decimal(16,4)   # in contract currency
 
 > No `frequency` field either — compensation amounts are monthly system-wide (principle 6), so a one-value column would only restate an assumption the system already makes.
 
-> **Edited in place.** Amounts are not effective-dated, so changing an amount changes what past reports show (§6.5).
+> **Edited in place.** Amounts are not effective-dated, so changing an amount changes the compensation shown by the dashboard on its next read (§6.5).
 
 ### 5.7 Salary Component (shared vocabulary)
 
@@ -229,40 +229,31 @@ A **designation** (a.k.a. job title) is a lookup table, referenced by the requir
 
 ### 6.1 Scope
 
-Period-based employee selection is **not defined for v0.5**. The period-overlap rule is out of scope and may be reconsidered during future reporting work (§9). Phase 6 needs design review before implementation; no replacement selection rule is chosen here.
+The v0.5 dashboard lists all employees; it has no reporting-month or reporting-period selector and does not limit the employee list to employees with an active contract. Viewers can combine filters over employee and contract fields, then open an employee's contract records.
 
-Once report scope is defined, reported amounts come from the selected contract's compensation plan:
+Compensation travels with each employment contract as its assigned `CompensationPlanComponent` entries and associated `SalaryComponent` details. Contract responses supply those components; there is no aggregate report endpoint. The dashboard drill-down and employee contract view use the same component breakdown.
 
-```
-EmploymentContract.compensation_plan_id
-  → CompensationPlan
-    → CompensationPlanComponent  (amount)
-      → SalaryComponent          (category)
-```
+### 6.2 Compensation detail
 
-### 6.2 The reported figure
+When shown, a contract's compensation figure is the sum of its assigned components whose category counts toward pay (`earning`, `allowance`). There is no gross/net distinction, and no payable or net figure exists. `contribution` components are excluded from compensation totals because they are not compensation (§5.7). The component breakdown remains available with the contract.
 
-An employee's reported figure is their **total compensation**: the sum of the amounts of their assigned components whose category counts toward pay (`earning`, `allowance`).
+### 6.3 Contract currency
 
-There is no gross/net distinction, and **no payable or net figure exists** — total compensation is the only reported figure. `contribution` components are excluded because they are not compensation (§5.7). If a payable concept is ever required, it is expressed as a `SalaryComponent.category`, not as a computed net.
-
-### 6.3 Native view
-
-Group by contract currency and sum. No FX is involved.
+Component amounts use their contract's currency. Keep contract figures in that currency; any future combined total must group by contract currency rather than add unlike currencies.
 
 ### 6.4 Normalized view
 
-A user selects a reporting currency. Each contract-currency total is converted at full precision, **rounded to the reporting currency's ISO 4217 exponent**, and then summed (§8). Rates are captured once per month, so every load within a month produces identical normalized figures. A currency whose pair is missing shows no figure, and the total is flagged rather than under-counted (§8).
+A user may select a reporting currency for a normalized view. Convert each displayed contract figure at full precision, then round it to the reporting currency's ISO 4217 exponent (§8). A missing rate hides the affected converted figure and marks its currency unavailable. The dashboard does not select contracts by reporting period.
 
 ### 6.5 Nothing is frozen — by design
 
 Reporting is a **read-only projection**. There is no payroll run, no persisted result, and no snapshot of reported figures — deliberately.
 
-- A report is computed **on read**, from the current contracts and plan components.
-- **Nothing is effective-dated.** Editing a plan amount or a contract changes past reports: there is no historical version of either to read instead, and no frozen figure to fall back on. The only input that does not drift is FX, which is fixed once captured for a month (§8).
+- Dashboard data is read from employee and contract records and their assigned plan components; no report result is persisted.
+- **Nothing is effective-dated.** Editing a plan amount or a contract changes the compensation shown by the dashboard on its next read: there is no version history or frozen figure to fall back on. The only input that does not drift is FX, which is fixed once captured for a month (§8).
 - A change is therefore either a **factual correction** — fixing a wrong contract or a mistyped rate — or a **genuine retroactive edit**. The model cannot tell the two apart.
 
-The design keeps **no audit trail and no effective-dating**: v0.5 cannot prove what a report said on a past date. That is accepted, not overlooked.
+The design keeps **no audit trail and no effective-dating**: v0.5 cannot prove what contract compensation the dashboard showed on a past date. That is accepted, not overlooked.
 
 ---
 
@@ -270,7 +261,7 @@ The design keeps **no audit trail and no effective-dating**: v0.5 cannot prove w
 
 - A contract is **active on date D** iff `start_date <= D` and (`end_date IS NULL` or `D <= end_date`).
 - **One active contract per employee** is enforced by the partial unique index (`UNIQUE (employee_id) WHERE end_date IS NULL`) plus an application-level non-overlap check on date ranges.
-- Period-overlap report scoping is out of scope for v0.5 and may be reconsidered in future reporting design (§9). No period-based contract selection rule is defined here.
+- The all-employee dashboard does not apply the `active` scope to determine which employees appear. `EmploymentContract.active(date)` remains available for date-specific contract lookups. Period-overlap scoping is out of scope for v0.5 and may be reconsidered if future work adds historical-period reporting (§9).
 - Termination = setting the contract `end_date`. Proration for mid-period hire/termination is deferred (§9).
 
 ---
@@ -280,15 +271,15 @@ The design keeps **no audit trail and no effective-dating**: v0.5 cannot prove w
 FX is **outside** setup entirely.
 
 - **Setup:** one currency per contract; component amounts carry no currency (§3).
-- **Reporting:** `contract-currency totals → FX conversion → normalized report`.
+- **Display:** contract compensation in its currency; optional FX conversion produces a normalized display.
 
 Rules:
 
-- **Pair set:** every **distinct currency in the `Country` table** × every **configured reporting currency**, excluding identity pairs (`C → C` is 1.0 and needs no row). The set is fixed and known in advance — it does not depend on which employees are in scope.
+- **Pair-set source:** settle this in Phase 7. A contract currency may override its country's currency (§3), so a `Country.currency`-based set alone can omit a currency used by the dashboard. The source must cover currencies present in displayed contract data.
 - **Reporting currencies are a configured list**, not something derived from compensation data. The set is system configuration, not a property of any country or contract.
-- **Capture point:** rates are fetched **once per calendar month, on the first dashboard load of that month**, and stored per pair keyed to the month (§5.8). Every later load in that month reuses them, so a month's normalized report is identical for every user and every page load.
-- **Rounding:** a converted amount is rounded to the reporting currency's ISO 4217 exponent before the totals are summed — the exponent is reporting configuration, not a `Country` attribute (§5.4).
-- **No live fallback.** A conversion uses **only** a stored snapshot for `(period_month, pair)`. A missing pair shows **no figure** in the normalized view, flagged _rate unavailable_; the report total is shown with a flag `N currencies unavailable`. There is no estimated branch and no fabricated rate.
+- **Capture point:** rates are fetched **once per calendar month, on the first dashboard load of that month**, and stored per pair keyed to the month (§5.8). Every later dashboard load in that month reuses them, so conversions use the same monthly rates for every user and page load.
+- **Rounding:** a converted amount is rounded to the reporting currency's ISO 4217 exponent for display — the exponent is reporting configuration, not a `Country` attribute (§5.4).
+- **No live fallback.** A conversion uses **only** a stored snapshot for `(period_month, pair)`. A missing pair shows **no converted figure** for the affected contract and flags the currency as _rate unavailable_. There is no estimated branch and no fabricated rate.
 - A reporting currency registered mid-month starts being captured at the **next** load; until then it shows no normalized figure.
 
 ---
@@ -303,6 +294,6 @@ Deliberately out of scope, by decision — not open questions:
 - Pay frequencies other than `monthly`
 - Proration for mid-period hire/termination
 - Mid-period plan switches — for now a contract's `compensation_plan_id` is treated as stable; no rule defines a switch's effect on past periods.
-- Period-overlap report scoping — selecting contracts whose date ranges intersect a reporting period is out of scope for v0.5. It may be reconsidered during future reporting design; Phase 6 requires review before implementation.
+- Period-overlap scoping — selecting contracts whose date ranges intersect a reporting period is out of scope for v0.5. The dashboard has no reporting-period selection; overlap rules may be reconsidered if future work adds historical-period reporting.
 
 > Payroll approvals are **not** listed: they governed a payroll run's status workflow, and runs are retired (§2).

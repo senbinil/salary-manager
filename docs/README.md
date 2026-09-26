@@ -17,7 +17,7 @@ There is no implementation yet — this repository is design-only.
 
 > Document 2 is a companion to `ARCHITECTURE.md` and is **kept in sync with it**.
 
-⚠️ **v0.5 is a deliberate contraction.** It retires payroll runs and deductions, so reports are recomputed on read rather than frozen — deliberately, and with no audit trail. Nothing is effective-dated either, so editing a plan changes past reports; only FX is fixed per month (§6.5).
+⚠️ **v0.5 is a deliberate contraction.** It retires payroll runs and deductions, so the dashboard reads employee and contract data directly, with no report-period selector, persisted result, or audit trail. Nothing is effective-dated, so editing a plan changes the compensation shown on the next read; FX rates are fixed per monthly snapshot (§8).
 
 ---
 
@@ -49,17 +49,23 @@ There is no implementation yet — this repository is design-only.
 
 ## The design in one paragraph
 
-The **Employment Contract** is the source of truth: it names the employment country, a single contract currency, and the assigned compensation plan. The **compensation plan** assigns amounts to reusable `SalaryComponent` definitions through `CompensationPlanComponent`s. An employee's active contract determines which plan and which currency apply. Every employee belongs to a `Department` and holds a `Designation` (job title) — both are lookup relations used for filtering; neither affects compensation. Reporting is a **live projection** — it sums the `earning` and `allowance` amounts of every in-scope contract's plan, groups by contract currency for a native view, and applies FX only when producing a normalized view. Nothing is persisted per period: there is no payroll run, no stored result, and no deductions.
+The **Employment Contract** is the source of truth: it names the employment country, a single contract currency, and the assigned compensation plan. The **compensation plan** assigns amounts to reusable `SalaryComponent` definitions through `CompensationPlanComponent`s. Every employee belongs to a `Department` and holds a `Designation` (job title) — both are lookup relations used for filtering; neither affects compensation. The dashboard lists all employees, supports combined employee and contract filters, and drills down to contract records with their component breakdown. It has no reporting-period selector or aggregate report endpoint. There is no payroll run, persisted report result, or deduction calculation.
 
 ---
 
-## Open items
+## Settled decisions
 
-**None.** The four questions v0.5 opened were settled on 2026-09-24:
+The four original v0.5 questions were settled on 2026-09-24:
 
-1. **Reports are recomputed on read** — no per-period snapshot and no audit trail; reporting only.
-2. **FX is fetched once per month**, on the first dashboard load, for every distinct country currency × reporting currency; a missing pair shows no figure rather than a fabricated rate.
-3. **Plan edits are retroactive and accepted** — an amount change is made in place and does change past reports; there is no effective-dating.
-4. **No payable figure** — total compensation is the only figure; a payable concept would be expressed through `SalaryComponent.category`.
+1. **Dashboard data is read from employee and contract records** — no per-period report snapshot and no audit trail.
+2. **FX is fetched once per month**, on the first dashboard load; a missing pair shows no figure rather than a fabricated rate. Phase 7 must settle a pair source that covers contract currency overrides (§3).
+3. **Plan edits take effect on the next read** — an amount change is made in place and changes the compensation shown by the dashboard; there is no effective-dating.
+4. **No payable figure** — compensation has no net/payable calculation. The dashboard can show the contract component breakdown; a payable concept would require a `SalaryComponent.category`.
+
+## Pending implementation details
+
+- Define the nested contract response and component data shape for the dashboard drill-down.
+- Settle the combined filter set for employee and contract fields.
+- Resolve how the dashboard receives captured FX rates without an aggregate report endpoint.
 
 Everything deliberately out of scope is listed in **§9 Deferred Items** of `ARCHITECTURE.md`.
