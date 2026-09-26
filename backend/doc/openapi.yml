@@ -32,6 +32,8 @@ tags:
     description: Designations (job titles) an employee can hold
   - name: Employees
     description: Employees on record, and the departments and designations they hold
+  - name: EmploymentContracts
+    description: Compensation terms and dates for employee contracts
   - name: SalaryComponents
     description: Salary vocabulary a compensation plan can attach an amount to
 paths:
@@ -337,6 +339,78 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /api/v1/employees/{employee_id}/employment_contracts:
+    get:
+      tags: [EmploymentContracts]
+      operationId: listEmploymentContracts
+      summary: List an employee's contracts
+      description: >
+        Returns one employee's contracts ordered by start date. Requires an
+        authenticated session.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: employee_id
+          in: path
+          required: true
+          description: Employee id.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Contracts for the employee, ordered by start date.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmploymentContract"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No employee with that id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/employees/{employee_id}/employment_contracts/{id}:
+    get:
+      tags: [EmploymentContracts]
+      operationId: getEmploymentContract
+      summary: Get an employee's contract
+      description: Returns one of the employee's contracts by id. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: employee_id
+          in: path
+          required: true
+          description: Employee id.
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          description: Employment contract id.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The employee's contract identified by the id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmploymentContract"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No employee with that id or no matching contract for the employee.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/v1/employees:
     get:
       tags: [Employees]
@@ -560,6 +634,37 @@ components:
         name:
           type: string
           description: Designation name, unique.
+    EmploymentContract:
+      type: object
+      description: >
+        The source of truth for an employee's compensation terms. Country records
+        the employment location; currency records the pay currency and may differ.
+      required: [id, employee_id, country_code, currency, compensation_plan_id, start_date, end_date]
+      properties:
+        id:
+          type: integer
+          description: Employment contract id.
+        employee_id:
+          type: integer
+          description: Employee covered by the contract.
+        country_code:
+          type: string
+          description: Employment country code (ISO 3166-1 alpha-2).
+        currency:
+          type: string
+          description: Compensation currency (ISO 4217).
+        compensation_plan_id:
+          type: integer
+          description: Compensation plan applied by the contract.
+        start_date:
+          type: string
+          format: date
+          description: First day the contract is active.
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: Last day the contract is active; null means open-ended.
     Employee:
       type: object
       description: >
