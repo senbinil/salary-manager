@@ -1,121 +1,46 @@
 # Salary Component Relationships Explained
 
-A focused guide to why `SalaryComponent` and `CompensationPlanComponent` are two entities, and how they work together.
+This guide accompanies the current [architecture](./ARCHITECTURE.md) and [ADR-0001](./decisions/ADR-0001-employee-specific-compensation.md).
 
-This is a companion to [`ARCHITECTURE.md`](./ARCHITECTURE.md), which calls the pair **Compensation Components** when it refers to them together (§2).
+## The three roles
 
-> **Synced to the current design.** Deductions were retired in v0.5, so this guide covers the **compensation side only**.
+Each model answers a different question:
 
----
+| Model | Responsibility |
+| --- | --- |
+| CompensationPlan | Which reusable tag groups this employee compensation for filtering? |
+| SalaryComponent | What is this component called, and what category is it? |
+| EmployeeCompensationComponent | How much is this component worth for this specific contract? |
 
-## 1. The core idea
+A CompensationPlan does not contain amounts. SalaryComponent is shared vocabulary and does not contain amounts. EmployeeCompensationComponent is the employee-specific assignment that owns the amount.
 
-`SalaryComponent` is just a **vocabulary word** — it has no money.
+## Relationship path
 
-```mermaid
-flowchart TD
-    SC[SalaryComponent<br/>definition only: name + category]
+Employee → EmploymentContract → EmployeeCompensation → EmployeeCompensationComponent → SalaryComponent
 
-    CPC[CompensationPlanComponent<br/>HOW MUCH we pay it]
+EmployeeCompensation also belongs to a CompensationPlan tag.
 
-    CP[Compensation Plan] --> CPC
-    CPC -->|"assigns an amount"| SC
-```
+- An employee can have multiple contracts over time.
+- Each contract has one employee compensation record.
+- Each employee compensation has one plan tag and one or more amount-bearing component rows.
+- A salary component may be reused by many employee compensation records; each record has its own amount.
+- Component amounts use the currency on their employment contract.
 
-`SalaryComponent` only stores a **name + category**. It does **not** contain an amount:
+## Example
 
-```
-SalaryComponent
-----------------
-id, name, category
+Alex and Bea can both use the “Engineering” compensation plan tag while having different contract amounts:
 
-1 | Basic Salary | earning
-2 | Bonus        | earning
-3 | Housing      | allowance
-4 | PF           | contribution
-```
+| Employee | Plan tag | Salary component | Contract currency | Employee-specific amount |
+| --- | --- | --- | --- | ---: |
+| Alex | Engineering | Base Salary | USD | 100,000 |
+| Bea | Engineering | Base Salary | USD | 125,000 |
 
-The **amount** lives on the assignment that uses the word — `CompensationPlanComponent`:
+The plan groups the records for filtering; it does not force the amounts to match. Changing Alex’s amount does not change Bea’s amount. Changing the plan tag changes classification only.
 
-```
-CompensationPlanComponent
--------------------------
-id, compensation_plan_id, salary_component_id, amount
-```
+## Categories and display
 
----
+Employee-specific rows support every existing SalaryComponent category: earning, allowance, and contribution. Contract detail returns the component breakdown with each component’s amount, name, and category. If a combined compensation total is displayed, earning and allowance count toward it; contribution remains a separate line.
 
-## 2. Two entities, one concept
+## Why this split
 
-| Entity                      | What it adds          | Meaning                      |
-| --------------------------- | --------------------- | ---------------------------- |
-| `SalaryComponent`           | `name`, `category`    | "What is it called?"         |
-| `CompensationPlanComponent` | `amount`              | "How much do we pay for it?" |
-
-- `SalaryComponent` = **the word** ("Basic Salary")
-- `CompensationPlanComponent` = **the paycheck amount** for that word
-
-> `CompensationPlanComponent` carries **no currency of its own**. Amounts are always expressed in the owning contract's currency, because there is exactly one contract currency (§3, §5.6 of `ARCHITECTURE.md`).
-
----
-
-## 3. Concrete example (India)
-
-```
-Monthly India Salary Plan
-├─ Basic Salary        ₹70,000   ← CompensationPlanComponent
-├─ Housing Allowance   ₹20,000   ← CompensationPlanComponent
-└─ Bonus               ₹10,000   ← CompensationPlanComponent
-```
-
-The plan pays three components. An employee whose contract assigns this plan has a reported compensation of **₹100,000** — the sum of the `earning` and `allowance` amounts (§6.2 of `ARCHITECTURE.md`).
-
-The same plan can be assigned to any number of contracts. Each contract supplies the currency the amounts are expressed in.
-
-The plan reaches a person **only through the contract** — nothing above mentions an employee:
-
-```
-employee → active contract → compensation plan → its components
-```
-
-`employment_contracts.compensation_plan_id` is the single reference tying a person to a plan (§5.3 of `ARCHITECTURE.md`). That is what makes the rows above a **price list** rather than anyone's pay: they become one employee's compensation only once a contract names the plan and supplies the currency the amounts are read in.
-
----
-
-## 4. Why not put the amount on `SalaryComponent`?
-
-Because the word is reusable and the amount is not:
-
-- A **reusable definition** lets one "Basic Salary" word be used by an India plan and a Germany plan, at different amounts, without duplicating the definition.
-- Because amounts settle in the **contract currency**, two contracts can pay the same component in different currencies. Putting `amount` (or `currency`) on the definition would force one amount and one currency on every user of that word.
-
-Splitting them means a plan change (an amount) never touches the shared vocabulary, and adding a country never duplicates it.
-
----
-
-## 5. Relationship diagram
-
-```mermaid
-erDiagram
-    EMPLOYEE ||--o{ EMPLOYMENT_CONTRACT : "signs"
-    EMPLOYMENT_CONTRACT }o--|| COMPENSATION_PLAN : "assigned"
-    COMPENSATION_PLAN ||--o{ COMPENSATION_PLAN_COMPONENT : "assigns"
-    COMPENSATION_PLAN_COMPONENT }o--|| SALARY_COMPONENT : "uses"
-```
-
-The top hop answers "how does this link to an employee": it does not, directly. `EMPLOYMENT_CONTRACT` is the only thing that points at a plan, so every path from a person to an amount runs through it, and one plan serves any number of contracts. That hop is also where "one active contract per employee" lives — the partial unique index on open-ended contracts (§5.3, §7 of `ARCHITECTURE.md`).
-
-The contract owns the two facts the component table deliberately lacks: the **currency** the amounts are read in (§3), and the **date range** that decides which plan applies to a period (§6.1, §7 of `ARCHITECTURE.md`). This is the compensation slice of the full domain diagram in §2 of [`ARCHITECTURE.md`](./ARCHITECTURE.md).
-
----
-
-## 6. TL;DR
-
-| Entity                      | Question it answers          |
-| --------------------------- | ---------------------------- |
-| `SalaryComponent`           | "What is it called?"         |
-| `CompensationPlanComponent` | "How much do we pay for it?" |
-
-`SalaryComponent` is the shared vocabulary; `CompensationPlanComponent` is where the money is. Together they are the **Compensation Components** node of the domain overview.
-
-The **deduct side no longer exists** — v0.5 retired `DeductionPlan`, `DeductionRule`, and `DeductionRuleBasis`. If you need the older, two-sided explanation, it is preserved at [`archive/SALARY-COMPONENT-RELATIONSHIPS-v0.4.md`](./archive/SALARY-COMPONENT-RELATIONSHIPS-v0.4.md).
+Putting an amount on CompensationPlan would make every employee using that plan share one value. Creating one plan per employee would duplicate tags and make plans less useful for filtering. Putting an amount on SalaryComponent would make shared vocabulary hold employee-specific data. Keeping the definition, tag, and employee amount separate avoids those problems.
