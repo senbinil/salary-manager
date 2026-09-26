@@ -9,6 +9,15 @@ class EmploymentContract < ApplicationRecord
   belongs_to :country, foreign_key: :country_code
   belongs_to :compensation_plan
 
+  # §7: active means the date falls between start_date and end_date, both ends
+  # included, and a null end_date runs on. Defaults to today - the dashboard's
+  # question - with the parameter kept so the same rule can answer an as-of
+  # question without a second scope. This is a point test, not the period rule:
+  # a report covers a range, and that predicate arrives with Phase 6.
+  scope :active, ->(date = Date.current) {
+    where("start_date <= ?", date).where("end_date IS NULL OR end_date >= ?", date)
+  }
+
   # §3: the country supplies the currency, and a contract may override it (an
   # expat in India paid in USD keeps India as the contract country). Create only:
   # once set, a currency is not silently re-derived from the country.
