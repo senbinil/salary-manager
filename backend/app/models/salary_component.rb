@@ -1,10 +1,10 @@
-# Shared vocabulary: the words a compensation plan can attach an amount to. Only
-# the definition lives here - no amount - so the same component can carry a
-# different amount on every plan (see CompensationPlanComponent).
+# Shared vocabulary for compensation component names and categories. Employee-
+# specific amounts live on EmployeeCompensationComponent.
 class SalaryComponent < ApplicationRecord
-  # earning and allowance count toward reported compensation; contribution does
-  # not (§6.2). The integers are persisted, so they must stay stable.
+  # The persisted integer values must stay stable.
   enum :category, { earning: 0, allowance: 1, contribution: 2 }
+
+  has_many :employee_compensation_components, inverse_of: :salary_component
 
   validates :name, presence: true, uniqueness: true
   validates :category, presence: true

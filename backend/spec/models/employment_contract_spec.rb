@@ -9,7 +9,7 @@ RSpec.describe EmploymentContract do
     expect(contract.currency).to eq("INR")
   end
 
-  # §3's expat case: employed in India, paid in USD. The country stays India for
+  # The expat case: employed in India, paid in USD. The country stays India for
   # reporting; only the currency the amounts are read in changes.
   it "lets a currency override the country's" do
     contract = create(:employment_contract, country: create(:country, currency: "INR"), currency: "USD")
@@ -62,7 +62,7 @@ RSpec.describe EmploymentContract do
   end
 
   describe "overlap" do
-    # §7: one contract at a time, and ranges include their end date, so a
+    # One contract at a time, and ranges include their end date, so a
     # successor cannot start on the day its predecessor ends.
     it "rejects a contract that overlaps an existing one" do
       create(
@@ -162,7 +162,7 @@ RSpec.describe EmploymentContract do
     }.to raise_error(ActiveRecord::StatementInvalid, /employment_contracts_end_after_start/)
   end
 
-  # §7: active means the date sits between the start and the end, both ends
+  # Active means the date sits between the start and the end, both ends
   # included, with a null end_date read as open-ended. This is the dashboard's
   # question - "is this employee employed?" - so it defaults to today.
   describe ".active" do
