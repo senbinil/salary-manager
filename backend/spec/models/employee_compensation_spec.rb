@@ -65,4 +65,64 @@ RSpec.describe EmployeeCompensation do
       )
     }.to raise_error(ActiveRecord::RecordNotUnique)
   end
+
+  describe "nested component attributes" do
+    it "creates component rows when the compensation is saved" do
+      compensation = create(:employment_contract).employee_compensation
+      salary_component = create(:salary_component)
+
+      expect {
+        compensation.update!(
+          employee_compensation_components_attributes: [
+            { salary_component_id: salary_component.id, amount: BigDecimal("1234.5000") }
+          ]
+        )
+      }.to change(EmployeeCompensationComponent, :count).by(1)
+
+      component = compensation.employee_compensation_components.find_by!(salary_component: salary_component)
+      expect(component.amount).to eq(BigDecimal("1234.5000"))
+    end
+
+    it "updates a component belonging to the compensation by its id" do
+      compensation = create(:employment_contract).employee_compensation
+      component = compensation.employee_compensation_components.first
+
+      compensation.update!(
+        employee_compensation_components_attributes: [
+          { id: component.id, amount: BigDecimal("4321.2500") }
+        ]
+      )
+
+      expect(component.reload.amount).to eq(BigDecimal("4321.2500"))
+    end
+
+    it "does not persist invalid nested components" do
+      compensation = create(:employment_contract).employee_compensation
+      salary_component = create(:salary_component)
+      compensation.assign_attributes(
+        employee_compensation_components_attributes: [
+          { salary_component_id: salary_component.id, amount: -1 }
+        ]
+      )
+
+      expect(compensation).not_to be_valid
+      expect { compensation.save }.not_to change(EmployeeCompensationComponent, :count)
+    end
+
+    it "rejects an id belonging to another compensation" do
+      compensation = create(:employment_contract).employee_compensation
+      foreign_component = create(:employment_contract)
+        .employee_compensation.employee_compensation_components.first
+      original_amount = foreign_component.amount
+
+      expect {
+        compensation.assign_attributes(
+          employee_compensation_components_attributes: [
+            { id: foreign_component.id, amount: BigDecimal("9999.0000") }
+          ]
+        )
+      }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(foreign_component.reload.amount).to eq(original_amount)
+    end
+  end
 end
