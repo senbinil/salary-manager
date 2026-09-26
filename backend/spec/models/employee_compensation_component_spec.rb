@@ -23,7 +23,10 @@ RSpec.describe EmployeeCompensationComponent do
   end
 
   it "accepts a zero amount" do
-    expect(build(:employee_compensation_component, amount: 0)).to be_valid
+    compensation = create(:employment_contract).employee_compensation
+    component = build(:employee_compensation_component, employee_compensation: compensation, amount: 0)
+
+    expect(component).to be_valid
   end
 
   it "allows one salary component only once per employee compensation" do
@@ -64,7 +67,9 @@ RSpec.describe EmployeeCompensationComponent do
   end
 
   it "keeps the amount at four decimal places" do
-    component = create(:employee_compensation_component, amount: "1234.5678")
+    component = create(:employment_contract)
+      .employee_compensation.employee_compensation_components.first
+    component.update!(amount: "1234.5678")
 
     expect(component.reload.amount).to eq(BigDecimal("1234.5678"))
   end
