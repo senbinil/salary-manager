@@ -12,8 +12,8 @@ class EmploymentContract < ApplicationRecord
   # §7: active means the date falls between start_date and end_date, both ends
   # included, and a null end_date runs on. Defaults to today - the dashboard's
   # question - with the parameter kept so the same rule can answer an as-of
-  # question without a second scope. This is a point test, not the period rule:
-  # a report covers a range, and that predicate arrives with Phase 6.
+  # question without a second scope. This is the v0.5 dashboard point check;
+  # report period selection is outside v0.5 and remains for Phase 6 review.
   scope :active, ->(date = Date.current) {
     where("start_date <= ?", date).where("end_date IS NULL OR end_date >= ?", date)
   }
