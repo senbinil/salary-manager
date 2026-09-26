@@ -637,9 +637,10 @@ components:
     EmploymentContract:
       type: object
       description: >
-        The source of truth for an employee's compensation terms. Country records
-        the employment location; currency records the pay currency and may differ.
-      required: [id, employee_id, country_code, currency, compensation_plan_id, start_date, end_date]
+        An employee's historical employment terms. Country records the employment
+        location; currency records the pay currency and may differ. Employee-
+        specific amounts are included under employee_compensation.
+      required: [id, employee_id, country_code, currency, compensation_plan_id, start_date, end_date, employee_compensation]
       properties:
         id:
           type: integer
@@ -655,7 +656,7 @@ components:
           description: Compensation currency (ISO 4217).
         compensation_plan_id:
           type: integer
-          description: Compensation plan applied by the contract.
+          description: Compatibility field; the tag id from employee_compensation.compensation_plan.
         start_date:
           type: string
           format: date
@@ -665,6 +666,56 @@ components:
           format: date
           nullable: true
           description: Last day the contract is active; null means open-ended.
+        employee_compensation:
+          $ref: "#/components/schemas/EmployeeCompensation"
+    EmployeeCompensation:
+      type: object
+      required: [id, compensation_plan, components]
+      properties:
+        id:
+          type: integer
+          description: Employee-specific compensation record id.
+        compensation_plan:
+          $ref: "#/components/schemas/EmployeeCompensationPlanTag"
+        components:
+          type: array
+          description: Employee-specific component amounts, ordered by salary component name.
+          items:
+            $ref: "#/components/schemas/EmployeeCompensationComponent"
+    EmployeeCompensationPlanTag:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          description: Compensation plan tag id, matching compensation_plan_id on the contract.
+        name:
+          type: string
+          description: Compensation plan tag name.
+    EmployeeCompensationComponent:
+      type: object
+      required: [amount, salary_component]
+      properties:
+        amount:
+          type: string
+          example: "70000.25"
+          description: Decimal amount encoded as a string in the currency on the parent employment contract.
+        salary_component:
+          $ref: "#/components/schemas/EmploymentContractSalaryComponent"
+    EmploymentContractSalaryComponent:
+      type: object
+      required: [id, name, category]
+      properties:
+        id:
+          type: integer
+          description: Salary component id.
+        name:
+          type: string
+          description: Component name.
+        category:
+          type: string
+          enum: [earning, allowance, contribution]
+          description: Salary component category.
     Employee:
       type: object
       description: >
@@ -693,8 +744,8 @@ components:
     SalaryComponent:
       type: object
       description: >
-        Shared vocabulary. The definition only - no amount lives here, so the same
-        component can carry a different amount on every plan.
+        Shared vocabulary for employee compensation. The definition contains
+        the name and category; each contract's compensation stores its amount.
       required: [id, name, category]
       properties:
         id:

@@ -1,6 +1,5 @@
 FactoryBot.define do
-  factory :compensation_plan_component do
-    compensation_plan
+  factory :employee_compensation_component do
     salary_component
     amount { 5000 }
   end

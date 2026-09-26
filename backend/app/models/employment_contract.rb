@@ -1,15 +1,14 @@
-# The source of truth for how an employee is paid (§1): one currency, one
-# compensation plan, and the date range they apply to. An end date is how a
-# contract terminates - there is no delete. Nothing is effective-dated, so editing
-# a contract changes the compensation shown by the dashboard on its next read (§6.5).
+# A historical employee agreement: who is paid, the employment location, one
+# currency, and the dates that define its term. Employee-specific compensation
+# lives in the required one-to-one EmployeeCompensation association.
 class EmploymentContract < ApplicationRecord
   belongs_to :employee
   # Country is keyed by its ISO code rather than an id, so the foreign key is
   # country_code and not the country_id the association would assume.
   belongs_to :country, foreign_key: :country_code
-  belongs_to :compensation_plan
+  has_one :employee_compensation, inverse_of: :employment_contract, autosave: true
 
-  # §7: active means the date falls between start_date and end_date, both ends
+  # Active means the date falls between start_date and end_date, both ends
   # included, and a null end_date runs on. Defaults to today, with the parameter
   # kept so callers can answer an as-of question without a second scope. This
   # lookup does not determine which employees appear on the dashboard.
@@ -17,11 +16,12 @@ class EmploymentContract < ApplicationRecord
     where("start_date <= ?", date).where("end_date IS NULL OR end_date >= ?", date)
   }
 
-  # §3: the country supplies the currency, and a contract may override it (an
+  # The country supplies the currency, and a contract may override it (an
   # expat in India paid in USD keeps India as the contract country). Create only:
   # once set, a currency is not silently re-derived from the country.
   before_validation :copy_currency_from_country, on: :create
 
+  validates :employee_compensation, presence: true
   validates :currency, presence: true
   validates :start_date, presence: true
   validate :end_date_after_start_date
@@ -42,7 +42,7 @@ class EmploymentContract < ApplicationRecord
     errors.add(:end_date, "must come after the start date")
   end
 
-  # §7: one contract at a time, so an employee's ranges must not intersect. This
+  # One contract at a time: an employee's date ranges must not intersect. This
   # reads before it writes, which is why the partial unique index exists as well.
   def no_overlapping_contracts
     return if employee_id.blank? || start_date.blank?

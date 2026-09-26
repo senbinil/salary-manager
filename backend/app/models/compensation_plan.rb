@@ -1,6 +1,7 @@
-# A named bundle of amounts. The plan itself carries only a name - its content is
-# the CompensationPlanComponents that assign amounts to salary components, so a
-# plan read without them says nothing about what it pays.
+# A named, reusable tag for filtering employee compensation records. A plan
+# classifies compensation but does not own its component amounts.
 class CompensationPlan < ApplicationRecord
+  has_many :employee_compensations, inverse_of: :compensation_plan
+
   validates :name, presence: true, uniqueness: true
 end

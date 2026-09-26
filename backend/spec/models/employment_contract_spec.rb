@@ -9,7 +9,7 @@ RSpec.describe EmploymentContract do
     expect(contract.currency).to eq("INR")
   end
 
-  # §3's expat case: employed in India, paid in USD. The country stays India for
+  # The expat case: employed in India, paid in USD. The country stays India for
   # reporting; only the currency the amounts are read in changes.
   it "lets a currency override the country's" do
     contract = create(:employment_contract, country: create(:country, currency: "INR"), currency: "USD")
@@ -17,19 +17,19 @@ RSpec.describe EmploymentContract do
     expect(contract.currency).to eq("USD")
   end
 
-  it "requires an employee, a country, a plan, and a start date" do
+  it "requires an employee, a country, compensation, and a start date" do
     contract = build(
       :employment_contract,
       employee: nil,
       country: nil,
-      compensation_plan: nil,
       start_date: nil
     )
+    contract.employee_compensation = nil
 
     expect(contract).not_to be_valid
     expect(contract.errors[:employee]).to be_present
     expect(contract.errors[:country]).to be_present
-    expect(contract.errors[:compensation_plan]).to be_present
+    expect(contract.errors[:employee_compensation]).to be_present
     expect(contract.errors[:start_date]).to be_present
   end
 
@@ -62,7 +62,7 @@ RSpec.describe EmploymentContract do
   end
 
   describe "overlap" do
-    # §7: one contract at a time, and ranges include their end date, so a
+    # One contract at a time, and ranges include their end date, so a
     # successor cannot start on the day its predecessor ends.
     it "rejects a contract that overlaps an existing one" do
       create(
@@ -141,7 +141,6 @@ RSpec.describe EmploymentContract do
       insert_contract(
         employee_id: existing.employee_id,
         country_code: existing.country_code,
-        compensation_plan_id: existing.compensation_plan_id,
         start_date: Date.new(2027, 1, 1)
       )
     }.to raise_error(ActiveRecord::RecordNotUnique)
@@ -157,14 +156,13 @@ RSpec.describe EmploymentContract do
       insert_contract(
         employee_id: existing.employee_id,
         country_code: existing.country_code,
-        compensation_plan_id: existing.compensation_plan_id,
         start_date: Date.new(2028, 1, 1),
         end_date: Date.new(2028, 1, 1)
       )
     }.to raise_error(ActiveRecord::StatementInvalid, /employment_contracts_end_after_start/)
   end
 
-  # §7: active means the date sits between the start and the end, both ends
+  # Active means the date sits between the start and the end, both ends
   # included, with a null end_date read as open-ended. This is the dashboard's
   # question - "is this employee employed?" - so it defaults to today.
   describe ".active" do
@@ -209,12 +207,11 @@ RSpec.describe EmploymentContract do
 
   # Goes straight to the database, so a failure is the database's own rule rather
   # than the validation the examples above already cover.
-  def insert_contract(employee_id:, country_code:, compensation_plan_id:, start_date:, end_date: nil)
+  def insert_contract(employee_id:, country_code:, start_date:, end_date: nil)
     connection = ActiveRecord::Base.connection
     values = [
       employee_id,
       connection.quote(country_code),
-      compensation_plan_id,
       connection.quote("USD"),
       connection.quote(start_date),
       end_date ? connection.quote(end_date) : "NULL"
@@ -222,7 +219,7 @@ RSpec.describe EmploymentContract do
 
     connection.execute(
       "INSERT INTO employment_contracts " \
-      "(employee_id, country_code, compensation_plan_id, currency, start_date, end_date) " \
+      "(employee_id, country_code, currency, start_date, end_date) " \
       "VALUES (#{values})"
     )
   end
