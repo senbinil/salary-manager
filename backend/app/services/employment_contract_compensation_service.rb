@@ -7,7 +7,7 @@ class EmploymentContractCompensationService
   def call
     compensation = @contract.employee_compensation
     components = compensation.employee_compensation_components
-      .sort_by { |component| component.salary_component.name }
+      .sort_by { |component| -component.amount }
 
     {
       id: compensation.id,
