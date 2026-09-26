@@ -10,7 +10,9 @@ Salary Manager is a monorepo for managing employee contracts and employee-specif
 - The frontend provides sign-in, a session-gated shell, and a placeholder Home page. The employee dashboard and reporting UI are future work.
 - There is no payroll run, aggregate report endpoint, reporting-month selector, or currency-normalization feature.
 
-See the [OpenAPI document](./backend/doc/openapi.yml) for current HTTP routes and response schemas.
+## API documentation
+
+The [OpenAPI 3.0 source](./backend/doc/openapi.yml) defines current HTTP routes and response schemas. Browse the [rendered API documentation](https://senbinil.github.io/salary-manager/); it is published from `main` when `backend/doc/` changes.
 
 ## Run locally
 
