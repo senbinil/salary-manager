@@ -6,6 +6,7 @@ class Employee < ApplicationRecord
   belongs_to :user, class_name: "Account", optional: true
   belongs_to :department
   belongs_to :designation
+  has_many :employment_contracts
 
   validates :name, presence: true
   validates :user, uniqueness: true, allow_nil: true

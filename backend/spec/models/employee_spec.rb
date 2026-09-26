@@ -36,4 +36,27 @@ RSpec.describe Employee do
 
     expect(create(:employee, user: account).user).to eq(account)
   end
+
+  describe "employment contracts" do
+    it "returns this employee's contracts across their history" do
+      employee = create(:employee)
+      other_employee = create(:employee)
+      first_contract = create(
+        :employment_contract,
+        employee: employee,
+        start_date: Date.new(2026, 1, 1),
+        end_date: Date.new(2026, 6, 30)
+      )
+      second_contract = create(
+        :employment_contract,
+        employee: employee,
+        start_date: Date.new(2026, 7, 1),
+        end_date: Date.new(2026, 12, 31)
+      )
+      other_contract = create(:employment_contract, employee: other_employee)
+
+      expect(employee.employment_contracts).to contain_exactly(first_contract, second_contract)
+      expect(other_contract.employee).to eq(other_employee)
+    end
+  end
 end
