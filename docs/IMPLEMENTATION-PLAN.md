@@ -63,9 +63,9 @@ Rodauth's `accounts` table stays the only identity table, and `Employee.user_id`
 
 Roles are numbered least-privileged first — `employee: 0, manager: 1, hr: 2` — and the column default is `0`, because that default is what Rodauth's own insert applies and what the public `create-account` route hands out.
 
-### D0.2 — Country data source
+### D0.2 — Country data source — **settled**
 
-`Country` (`code`, `name`, `currency`) is reference data that everything else keys off, and nothing populates it yet — Phase 1 ships the table and its read endpoint, and Phase 8 lists countries as read-only. Decide the source: a committed `db/seeds` list of ISO 3166-1 alpha-2 + ISO 4217 currency pairs (recommended), or a one-time import. Scope is small and stable, so a committed list is preferred over a runtime fetch.
+Do not ship country seed data. Phase 1 provides the `Country` table and read endpoint, while endpoint specs create the rows they need with FactoryBot. This keeps the test data explicit and avoids making seeded reference data a prerequisite for exercising the endpoint. The table stores only `code`, `name`, and `currency`; the ISO 4217 exponent is part of reporting-currency configuration (§8), not a country attribute.
 
 ### D0.3 — Reporting-currency configuration
 
@@ -75,9 +75,9 @@ Roles are numbered least-privileged first — `employee: 0, manager: 1, hr: 2` �
 
 Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate, rate_date, source }`). Decide now whether the first provider is ECB, openexchangerates, or manual entry — the adapter signature is identical; only the implementation differs. Manual is a valid v1 and satisfies "no live fallback, no fabricated rate" by construction.
 
-### D0.5 — Component-assignment uniqueness
+### D0.5 — Component-assignment uniqueness — **settled**
 
-`CompensationPlanComponent` links a plan to a `SalaryComponent` with an amount. Decide whether a plan may assign the same component twice (e.g. two bonuses). Recommended: `UNIQUE (compensation_plan_id, salary_component_id)` — one amount per word per plan. Phase 4 encodes the choice.
+A compensation plan may assign each `SalaryComponent` only once: enforce `UNIQUE (compensation_plan_id, salary_component_id)`. The plan-component row stores one amount for that component in the plan, so repeated assignments would be ambiguous; separate bonus concepts should be separate salary components. Phase 4 implements this in both the database and model validation.
 
 ---
 
@@ -146,9 +146,12 @@ Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate
   - `CHECK (end_date IS NULL OR end_date > start_date)`.
   - Partial unique index `UNIQUE (employee_id) WHERE end_date IS NULL` (one open-ended contract per employee).
 - `EmploymentContract` model: `belongs_to :country, :compensation_plan, :employee`; default `currency` from `country.currency` on create (§3); application-level non-overlap validation.
-- Resolution service (a PORO, e.g. `ActiveContract`) with the §7 predicates — `active_on?(date)`, `covers?(period)` — fully spec'd, since reporting in Phases 6–7 depends on it.
+- Active-contract resolution, split by which question is being asked:
+  - `EmploymentContract.active(date = Date.current)` — §7's **point rule**: the date falls between `start_date` and `end_date`, both ends included, null `end_date` open-ended. This is the dashboard's question, so it defaults to today.
+  - §7's **period rule** — a contract is in scope when its date range intersects the reporting period — moves to **Phase 6**, with the report that needs it. Proration is out of scope, so any overlap includes the employee for the report; a point test cannot answer this range question.
+  - No `ActiveContract` PORO: there is no caller for one until Phase 6.
 - Endpoints (read-only for now, like Phases 1, 3, and 4; management CRUD is Phase 8): read an employee's contracts. Nested under `/api/v1/employees/:id/contracts` or flat `/api/v1/contracts` — pick one in the slice. Writes are deferred with the rest of the CRUD, so termination (setting `end_date`) arrives with them.
-- **Done when:** the partial unique index + CHECK hold, non-overlap is validated, the resolution service is green, the read endpoint returns its list, and specs are green.
+- **Done when:** the partial unique index + CHECK hold, non-overlap is validated, `active` answers the point rule, the read endpoint returns its list, and specs are green.
 
 ---
 
@@ -156,6 +159,7 @@ Phase 7 introduces an adapter behind a fixed interface (`from`, `to` → `{ rate
 
 **Goal.** The first report: live projection, no FX.
 
+- Period predicate first: a scope implementing §7's third bullet — a contract covers a period when the two ranges intersect. Phase 5 deferred this here, because only the report needs it.
 - Report service (PORO, e.g. `CompensationReport`): for a period, select in-scope employees via the §6.1/§7 rules, sum `earning` + `allowance` `CompensationPlanComponent` amounts per contract, group by contract currency.
 - No gross/net, no payable, no `contribution` (§6.2) — the only figure is total compensation per currency.
 - Endpoint: `GET /api/v1/reports` with a period parameter; returns the native view (§6.3). Shape is a slice decision (grouped by currency, with employee-level detail for drill-down).
