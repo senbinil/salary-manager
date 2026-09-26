@@ -145,12 +145,12 @@ A compensation plan may assign each `SalaryComponent` only once: enforce `UNIQUE
   - `employment_contracts`: `id`, `employee_id` FK (not null), `country_code` FK (not null), `currency char(3)` (not null), `compensation_plan_id` FK (not null), `start_date` (not null), `end_date` (nullable). No `pay_frequency` — amounts are monthly system-wide (principle 6), so the column would only restate that.
   - `CHECK (end_date IS NULL OR end_date > start_date)`.
   - Partial unique index `UNIQUE (employee_id) WHERE end_date IS NULL` (one open-ended contract per employee).
-- `EmploymentContract` model: `belongs_to :country, :compensation_plan, :employee`; default `currency` from `country.currency` on create (§3); application-level non-overlap validation.
+- Models: `Employee.has_many :employment_contracts`; `EmploymentContract.belongs_to :employee, :country, :compensation_plan`; default `currency` from `country.currency` on create (§3); application-level non-overlap validation.
 - Active-contract resolution, split by which question is being asked:
   - `EmploymentContract.active(date = Date.current)` — §7's **point rule**: the date falls between `start_date` and `end_date`, both ends included, null `end_date` open-ended. This is the dashboard's question, so it defaults to today.
   - §7's **period rule** — a contract is in scope when its date range intersects the reporting period — moves to **Phase 6**, with the report that needs it. Proration is out of scope, so any overlap includes the employee for the report; a point test cannot answer this range question.
   - No `ActiveContract` PORO: there is no caller for one until Phase 6.
-- Endpoints (read-only for now, like Phases 1, 3, and 4; management CRUD is Phase 8): read an employee's contracts. Nested under `/api/v1/employees/:id/contracts` or flat `/api/v1/contracts` — pick one in the slice. Writes are deferred with the rest of the CRUD, so termination (setting `end_date`) arrives with them.
+- Endpoints (read-only for now, like Phases 1, 3, and 4; management CRUD is Phase 8): `GET /api/v1/employees/:employee_id/employment_contracts` and `GET /api/v1/employees/:employee_id/employment_contracts/:id`. Both actions are nested and scoped to the employee. Writes are deferred with the rest of the CRUD, so termination (setting `end_date`) arrives with them.
 - **Done when:** the partial unique index + CHECK hold, non-overlap is validated, `active` answers the point rule, the read endpoint returns its list, and specs are green.
 
 ---
