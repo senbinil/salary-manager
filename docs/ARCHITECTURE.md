@@ -77,7 +77,7 @@ The existing authenticated contract routes remain:
 
 Index ordering, authentication, employee scoping, and 404 behavior remain unchanged. No report endpoint or new route is added.
 
-Contract responses keep their existing fields, including top-level compensation_plan_id for compatibility. That ID is derived from the associated employee compensation. Responses add employee_compensation containing its ID, a compensation_plan object with ID and name, and components with amount plus salary component ID, name, and category. All categories are included, ordered by salary component name. Amount serialization retains the existing decimal JSON format.
+Contract responses keep their existing fields, including top-level compensation_plan_id for compatibility. That ID is derived from the associated employee compensation. Responses add employee_compensation containing its ID, a compensation_plan object with ID and name, and components with amount plus salary component ID, name, and category. All categories are included, ordered by compensation amount descending. Amount serialization retains the existing decimal JSON format.
 
 ## 7. Schema transition
 
