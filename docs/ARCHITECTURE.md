@@ -106,6 +106,8 @@ designation_id bigint FK → designations, not null
 
 > `country` is deliberately absent. Employment country lives on the active `EmploymentContract`; an employee's location is derived from it. Termination is represented by setting the contract's `end_date`.
 
+An employee may have multiple `EmploymentContract` records over time; each contract belongs to one employee. The contract date ranges must not overlap (§7).
+
 ### 5.3 Employment Contract (source of truth)
 
 ```
