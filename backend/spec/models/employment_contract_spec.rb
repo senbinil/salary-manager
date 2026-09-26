@@ -164,6 +164,49 @@ RSpec.describe EmploymentContract do
     }.to raise_error(ActiveRecord::StatementInvalid, /employment_contracts_end_after_start/)
   end
 
+  # §7: active means the date sits between the start and the end, both ends
+  # included, with a null end_date read as open-ended. This is the dashboard's
+  # question - "is this employee employed?" - so it defaults to today.
+  describe ".active" do
+    # A contract whose end date is still ahead is active: active means today falls
+    # inside the range, not that no end date has been set.
+    it "includes an open-ended contract and one whose end date is still ahead" do
+      open_ended = create(:employment_contract, start_date: Date.new(2026, 1, 1), end_date: nil)
+      ending_later = create(
+        :employment_contract,
+        start_date: Date.new(2026, 1, 1),
+        end_date: Date.new(2026, 12, 31)
+      )
+
+      expect(described_class.active(Date.new(2026, 6, 1))).to contain_exactly(open_ended, ending_later)
+    end
+
+    it "excludes a contract that has ended and one that has not started yet" do
+      create(:employment_contract, start_date: Date.new(2025, 1, 1), end_date: Date.new(2025, 12, 31))
+      create(:employment_contract, start_date: Date.new(2027, 1, 1), end_date: nil)
+
+      expect(described_class.active(Date.new(2026, 6, 1))).to be_empty
+    end
+
+    # Both ends count, so a contract is active on its first and last day.
+    it "counts the start and end dates themselves" do
+      contract = create(:employment_contract, start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 6, 30))
+
+      expect(described_class.active(Date.new(2026, 1, 1))).to contain_exactly(contract)
+      expect(described_class.active(Date.new(2026, 6, 30))).to contain_exactly(contract)
+      expect(described_class.active(Date.new(2026, 7, 1))).to be_empty
+    end
+
+    # No argument means today, which is how the dashboard calls it. Bracketing
+    # today by a day either side keeps the example clock-free.
+    it "defaults to today" do
+      current = create(:employment_contract, start_date: Date.current - 1, end_date: nil)
+      create(:employment_contract, start_date: Date.current - 10, end_date: Date.current - 1)
+
+      expect(described_class.active).to contain_exactly(current)
+    end
+  end
+
   # Goes straight to the database, so a failure is the database's own rule rather
   # than the validation the examples above already cover.
   def insert_contract(employee_id:, country_code:, compensation_plan_id:, start_date:, end_date: nil)
