@@ -17,19 +17,19 @@ RSpec.describe EmploymentContract do
     expect(contract.currency).to eq("USD")
   end
 
-  it "requires an employee, a country, a plan, and a start date" do
+  it "requires an employee, a country, compensation, and a start date" do
     contract = build(
       :employment_contract,
       employee: nil,
       country: nil,
-      compensation_plan: nil,
       start_date: nil
     )
+    contract.employee_compensation = nil
 
     expect(contract).not_to be_valid
     expect(contract.errors[:employee]).to be_present
     expect(contract.errors[:country]).to be_present
-    expect(contract.errors[:compensation_plan]).to be_present
+    expect(contract.errors[:employee_compensation]).to be_present
     expect(contract.errors[:start_date]).to be_present
   end
 
@@ -141,7 +141,6 @@ RSpec.describe EmploymentContract do
       insert_contract(
         employee_id: existing.employee_id,
         country_code: existing.country_code,
-        compensation_plan_id: existing.compensation_plan_id,
         start_date: Date.new(2027, 1, 1)
       )
     }.to raise_error(ActiveRecord::RecordNotUnique)
@@ -157,7 +156,6 @@ RSpec.describe EmploymentContract do
       insert_contract(
         employee_id: existing.employee_id,
         country_code: existing.country_code,
-        compensation_plan_id: existing.compensation_plan_id,
         start_date: Date.new(2028, 1, 1),
         end_date: Date.new(2028, 1, 1)
       )
@@ -209,12 +207,11 @@ RSpec.describe EmploymentContract do
 
   # Goes straight to the database, so a failure is the database's own rule rather
   # than the validation the examples above already cover.
-  def insert_contract(employee_id:, country_code:, compensation_plan_id:, start_date:, end_date: nil)
+  def insert_contract(employee_id:, country_code:, start_date:, end_date: nil)
     connection = ActiveRecord::Base.connection
     values = [
       employee_id,
       connection.quote(country_code),
-      compensation_plan_id,
       connection.quote("USD"),
       connection.quote(start_date),
       end_date ? connection.quote(end_date) : "NULL"
@@ -222,7 +219,7 @@ RSpec.describe EmploymentContract do
 
     connection.execute(
       "INSERT INTO employment_contracts " \
-      "(employee_id, country_code, compensation_plan_id, currency, start_date, end_date) " \
+      "(employee_id, country_code, currency, start_date, end_date) " \
       "VALUES (#{values})"
     )
   end
