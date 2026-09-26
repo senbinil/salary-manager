@@ -37,7 +37,7 @@ RSpec.describe "Employment contracts", type: :request do
     compensation = contract.employee_compensation
     components = compensation.employee_compensation_components
       .includes(:salary_component)
-      .sort_by { |line| line.salary_component.name }
+      .sort_by { |line| -line.amount }
 
     {
       "id" => contract.id,
