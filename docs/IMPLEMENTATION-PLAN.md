@@ -8,7 +8,7 @@ This turns [`ARCHITECTURE.md`](./ARCHITECTURE.md) into an ordered set of build p
 
 - **One slice at a time.** A phase is delivered as one or more thin slices. Each slice follows the repo's TDD shape: the spec commit lands first ("Red on purpose"), then the implementation commit, with Conventional Commits. Confirm each slice's test seams (route-level + shell-level integration) before writing its specs.
 - **Backend first, frontend after.** Phases 1–7 build the API and domain; Phases 8–9 build the UI on top of it. A frontend screen can be pulled earlier and paired with its backend phase if the user prefers vertical slices — the dependency graph below marks what each screen needs.
-- **Respect the deferred list.** `ARCHITECTURE.md` §9 is authoritative: no payment processing, no tax engines, no `contribution` amounts in reporting, no non-monthly frequencies, no proration, no mid-period plan switches. A phase that drifts into one of those is out of scope.
+- **Respect the deferred list.** `ARCHITECTURE.md` §9 is authoritative: no payment processing, no tax engines, no `contribution` amounts in reporting, no non-monthly frequencies, no proration, no mid-period plan switches, and no period-overlap report scoping in v0.5. A phase that drifts into one of those is out of scope.
 
 ---
 
@@ -148,8 +148,8 @@ A compensation plan may assign each `SalaryComponent` only once: enforce `UNIQUE
 - Models: `Employee.has_many :employment_contracts`; `EmploymentContract.belongs_to :employee, :country, :compensation_plan`; default `currency` from `country.currency` on create (§3); application-level non-overlap validation.
 - Active-contract resolution, split by which question is being asked:
   - `EmploymentContract.active(date = Date.current)` — §7's **point rule**: the date falls between `start_date` and `end_date`, both ends included, null `end_date` open-ended. This is the dashboard's question, so it defaults to today.
-  - §7's **period rule** — a contract is in scope when its date range intersects the reporting period — moves to **Phase 6**, with the report that needs it. Proration is out of scope, so any overlap includes the employee for the report; a point test cannot answer this range question.
-  - No `ActiveContract` PORO: there is no caller for one until Phase 6.
+  - Period-overlap report scoping is out of scope for v0.5 and may be reconsidered during future reporting design (§9). Phase 6 selection rules require review before implementation; no replacement rule is chosen here.
+  - No `ActiveContract` PORO is planned for v0.5. Revisit that choice only if future reporting requirements need it.
 - Endpoints (read-only for now, like Phases 1, 3, and 4; management CRUD is Phase 8): `GET /api/v1/employees/:employee_id/employment_contracts` and `GET /api/v1/employees/:employee_id/employment_contracts/:id`. Both actions are nested and scoped to the employee. Writes are deferred with the rest of the CRUD, so termination (setting `end_date`) arrives with them.
 - **Done when:** the partial unique index + CHECK hold, non-overlap is validated, `active` answers the point rule, the read endpoint returns its list, and specs are green.
 
@@ -159,8 +159,10 @@ A compensation plan may assign each `SalaryComponent` only once: enforce `UNIQUE
 
 **Goal.** The first report: live projection, no FX.
 
-- Period predicate first: a scope implementing §7's third bullet — a contract covers a period when the two ranges intersect. Phase 5 deferred this here, because only the report needs it.
-- Report service (PORO, e.g. `CompensationReport`): for a period, select in-scope employees via the §6.1/§7 rules, sum `earning` + `allowance` `CompensationPlanComponent` amounts per contract, group by contract currency.
+This phase requires design review before implementation. The report period, employee selection, and API shape below are draft and not settled.
+
+- Review the reporting design before implementation, including how the report selects employees. Period-overlap scoping is out of scope for v0.5 and may be considered in future work; no replacement selection rule is chosen here.
+- Report service (PORO, e.g. `CompensationReport`): use the employee scope settled in the design review, sum `earning` + `allowance` `CompensationPlanComponent` amounts per selected contract, and group by contract currency.
 - No gross/net, no payable, no `contribution` (§6.2) — the only figure is total compensation per currency.
 - Endpoint: `GET /api/v1/reports` with a period parameter; returns the native view (§6.3). Shape is a slice decision (grouped by currency, with employee-level detail for drill-down).
 - **Done when:** the native report is correct for seeded fixtures (including an employee with a `contribution` component that must be excluded), specs green. No FX anywhere.
@@ -213,4 +215,4 @@ A compensation plan may assign each `SalaryComponent` only once: enforce `UNIQUE
 
 ## Out of scope (do not build)
 
-`ARCHITECTURE.md` §9, restated so no phase reintroduces it: payment processing, country-specific tax engines, `contribution` amounts in reporting, non-monthly pay frequencies, mid-period hire/termination proration, and mid-period plan switches. There is no payroll run and no persisted result — reporting is recomputed on read, with no audit trail and no effective-dating.
+`ARCHITECTURE.md` §9, restated so no phase reintroduces it: payment processing, country-specific tax engines, `contribution` amounts in reporting, non-monthly pay frequencies, mid-period hire/termination proration, mid-period plan switches, and period-overlap report scoping. There is no payroll run and no persisted result — reporting is recomputed on read, with no audit trail and no effective-dating.

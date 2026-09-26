@@ -229,7 +229,9 @@ A **designation** (a.k.a. job title) is a lookup table, referenced by the requir
 
 ### 6.1 Scope
 
-For a reporting period, an employee is **in scope** iff their active contract (§7) covers that period. Reported amounts come from the contract's compensation plan:
+Period-based employee selection is **not defined for v0.5**. The period-overlap rule is out of scope and may be reconsidered during future reporting work (§9). Phase 6 needs design review before implementation; no replacement selection rule is chosen here.
+
+Once report scope is defined, reported amounts come from the selected contract's compensation plan:
 
 ```
 EmploymentContract.compensation_plan_id
@@ -268,7 +270,7 @@ The design keeps **no audit trail and no effective-dating**: v0.5 cannot prove w
 
 - A contract is **active on date D** iff `start_date <= D` and (`end_date IS NULL` or `D <= end_date`).
 - **One active contract per employee** is enforced by the partial unique index (`UNIQUE (employee_id) WHERE end_date IS NULL`) plus an application-level non-overlap check on date ranges.
-- For a reporting period, an employee is **in scope** iff their active contract covers it: `start_date <= period_end` and (`end_date IS NULL` or `end_date >= period_start`).
+- Period-overlap report scoping is out of scope for v0.5 and may be reconsidered in future reporting design (§9). No period-based contract selection rule is defined here.
 - Termination = setting the contract `end_date`. Proration for mid-period hire/termination is deferred (§9).
 
 ---
@@ -301,5 +303,6 @@ Deliberately out of scope, by decision — not open questions:
 - Pay frequencies other than `monthly`
 - Proration for mid-period hire/termination
 - Mid-period plan switches — for now a contract's `compensation_plan_id` is treated as stable; no rule defines a switch's effect on past periods.
+- Period-overlap report scoping — selecting contracts whose date ranges intersect a reporting period is out of scope for v0.5. It may be reconsidered during future reporting design; Phase 6 requires review before implementation.
 
 > Payroll approvals are **not** listed: they governed a payroll run's status workflow, and runs are retired (§2).
