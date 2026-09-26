@@ -16,7 +16,7 @@ In v0.6, amounts belong to an employee's compensation record on their employment
 4. Compensation plans are reusable labels for filtering. They do not own component amounts.
 5. Salary components are reusable definitions containing a name and category. They do not own amounts.
 6. Employee compensation supports all existing categories: earning, allowance, and contribution.
-7. Amounts retain decimal precision 16, scale 4. Existing monthly compensation semantics remain unchanged.
+7. Amounts retain decimal precision 16, scale 4. Compensation data has no effective date or reporting-period field, and the dashboard design has no month selector.
 8. The dashboard is a live view of employee and contract data. There is no payroll run, persisted report result, reporting-period selector, or aggregate report endpoint.
 
 ## 3. Relationships
@@ -68,7 +68,7 @@ Amounts are not effective-dated within a contract. Editing an employee compensat
 
 ## 6. Dashboard and API behavior
 
-The dashboard roster includes all employees. For the current compensation summary it uses the employee's contract active today, when one exists; employees without an active contract remain in the roster without current-contract compensation. Employee drill-down retains access to the employee's contract history.
+The planned dashboard roster includes all employees. For a current compensation summary it will use the employee's contract active today, when one exists; employees without an active contract remain in the roster without current-contract compensation. Employee drill-down will retain access to the employee's contract history. The dashboard UI is not implemented yet.
 
 The existing authenticated contract routes remain:
 
@@ -77,7 +77,7 @@ The existing authenticated contract routes remain:
 
 Index ordering, authentication, employee scoping, and 404 behavior remain unchanged. No report endpoint or new route is added.
 
-Contract responses keep their existing fields, including top-level compensation_plan_id for compatibility. That ID is derived from the associated employee compensation. Responses add employee_compensation containing its ID, a compensation_plan object with ID and name, and components with amount plus salary component ID, name, and category. All categories are included, ordered by salary component name. Amount serialization retains the existing decimal JSON format.
+Contract responses keep their existing fields, including top-level compensation_plan_id for compatibility. That ID is derived from the associated employee compensation. Responses add employee_compensation containing its ID, a compensation_plan object with ID and name, and components with amount plus salary component ID, name, and category. All categories are included, ordered by compensation amount descending. Amount serialization retains the existing decimal JSON format.
 
 ## 7. Schema transition
 
@@ -87,15 +87,15 @@ There are no existing records to preserve. The schema change adds employee_compe
 
 There is no reporting-period selection or aggregate report endpoint. Combined employee and contract filters operate over employee and contract data; the contract drill-down carries its own compensation detail.
 
-FX remains a reporting concern, not setup data. If normalized display is implemented, it uses the v0.5 monthly rate snapshot decisions preserved in the archive: configured reporting currencies, captured rates, no live fallback, and ISO 4217 display rounding. The employee-specific compensation change does not change those rules.
+FX normalization is not implemented. The v0.5 rate-snapshot policy is historical, not a current v0.6 decision. Rate source, timing, fallback, and display rules should be reviewed if normalized display is scheduled.
 
 ## 9. Deferred items
 
 - Payment processing and payroll runs.
 - Country-specific tax engines.
 - Net-pay or payable calculations.
-- Pay frequencies other than the existing monthly semantics.
-- Mid-period hire or termination proration.
+- Pay-frequency rules; the current models do not store a pay frequency.
+- Payroll calculations and proration.
 - Effective-dated component changes within one contract.
 - Historical-period overlap reporting.
 

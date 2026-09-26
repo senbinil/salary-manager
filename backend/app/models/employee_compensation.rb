@@ -4,6 +4,7 @@ class EmployeeCompensation < ApplicationRecord
   belongs_to :employment_contract, inverse_of: :employee_compensation
   belongs_to :compensation_plan, inverse_of: :employee_compensations
   has_many :employee_compensation_components, inverse_of: :employee_compensation
+  accepts_nested_attributes_for :employee_compensation_components
 
   validates :employment_contract_id, uniqueness: true
   validates :employee_compensation_components, length: { minimum: 1 }

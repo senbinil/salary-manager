@@ -1,7 +1,6 @@
 module Api
   module V1
-    # Lists the compensation plans a client can browse. A plan carries only a
-    # name - its amounts live on its components - so a list needs nothing more.
+    # Lists reusable plan tags used to classify employee-specific compensation.
     class CompensationPlansController < ApplicationController
       before_action :authenticate!
 

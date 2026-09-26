@@ -23,7 +23,7 @@ tags:
   - name: Session
     description: The signed-in account's session state (application endpoints)
   - name: CompensationPlans
-    description: Named bundles that attach an amount to each salary component
+    description: Named tags used to classify employee-specific compensation
   - name: Countries
     description: Employment countries (ISO 3166-1 reference data)
   - name: Departments
@@ -35,7 +35,7 @@ tags:
   - name: EmploymentContracts
     description: Compensation terms and dates for employee contracts
   - name: SalaryComponents
-    description: Salary vocabulary a compensation plan can attach an amount to
+    description: Reusable salary vocabulary referenced by employee compensation
 paths:
   /up:
     get:
@@ -257,8 +257,8 @@ paths:
       operationId: listCompensationPlans
       summary: List compensation plans
       description: >
-        Returns the plans a client can browse. A plan names a bundle of amounts;
-        what it pays lives on its components. Requires an authenticated session.
+        Returns the plan tags used to classify employee-specific compensation.
+        Amounts belong to each employee's compensation. Requires an authenticated session.
       security:
         - cookieAuth: []
       responses:
@@ -470,8 +470,8 @@ paths:
       operationId: listSalaryComponents
       summary: List salary components
       description: >
-        Returns the salary components a compensation plan can attach an amount
-        to. Requires an authenticated session.
+        Returns reusable salary-component definitions that employee
+        compensation records can reference. Requires an authenticated session.
       security:
         - cookieAuth: []
       responses:
@@ -577,9 +577,9 @@ components:
     CompensationPlan:
       type: object
       description: >
-        A named bundle of amounts. The name is all the list carries - what a plan
-        pays is on its components, which assign an amount to each salary
-        component, so a plan read without them says nothing about what it pays.
+        A reusable name used as a tag for employee-specific compensation. A plan
+        does not own component amounts; those are stored on each employee's
+        compensation record.
       required: [id, name]
       properties:
         id:
@@ -679,7 +679,7 @@ components:
           $ref: "#/components/schemas/EmployeeCompensationPlanTag"
         components:
           type: array
-          description: Employee-specific component amounts, ordered by salary component name.
+          description: Employee-specific component amounts, ordered by amount descending.
           items:
             $ref: "#/components/schemas/EmployeeCompensationComponent"
     EmployeeCompensationPlanTag:
@@ -745,7 +745,8 @@ components:
       type: object
       description: >
         Shared vocabulary for employee compensation. The definition contains
-        the name and category; each contract's compensation stores its amount.
+        the name and category; the employee compensation associated with each
+        contract stores its amount.
       required: [id, name, category]
       properties:
         id:

@@ -2,6 +2,10 @@
 
 This plan replaces the v0.5 implementation plan, preserved at [archive/IMPLEMENTATION-PLAN-v0.5.md](./archive/IMPLEMENTATION-PLAN-v0.5.md). The current architecture is [ARCHITECTURE.md](./ARCHITECTURE.md); the rationale and decision trail are in [ADR-0001](./decisions/ADR-0001-employee-specific-compensation.md).
 
+## Status
+
+Phases 1–5 of the v0.6 model and API sequence are complete. Phase 6 is future dashboard work; the frontend still has a placeholder Home page. A follow-up adds nested component attributes to `EmployeeCompensation` at the model layer only; no HTTP contract write route was added. The phases below record the original delivery sequence.
+
 ## Delivery approach
 
 Work on a feature branch, in the phases below. Keep each phase reviewable, use Conventional Commits, and commit specs before their implementation. Never commit, push, or merge directly to main.
