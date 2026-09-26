@@ -52,32 +52,7 @@ module Api
           compensation_plan_id: compensation.compensation_plan_id,
           start_date: contract.start_date,
           end_date: contract.end_date,
-          employee_compensation: employee_compensation_json(compensation)
-        }
-      end
-
-      def employee_compensation_json(compensation)
-        components = compensation.employee_compensation_components
-          .sort_by { |component| component.salary_component.name }
-
-        {
-          id: compensation.id,
-          compensation_plan: {
-            id: compensation.compensation_plan_id,
-            name: compensation.compensation_plan.name
-          },
-          components: components.map { |component| employee_compensation_component_json(component) }
-        }
-      end
-
-      def employee_compensation_component_json(component)
-        {
-          amount: component.amount,
-          salary_component: {
-            id: component.salary_component.id,
-            name: component.salary_component.name,
-            category: component.salary_component.category
-          }
+          employee_compensation: EmploymentContractCompensationService.new(contract).call
         }
       end
     end
