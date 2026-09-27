@@ -41,7 +41,7 @@ describe('routes', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: /salary management/i,
+        name: /employees/i,
       }),
     ).toBeInTheDocument()
     expect(screen.getByRole('banner')).toBeInTheDocument()
@@ -77,7 +77,7 @@ describe('routes', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: /salary management/i,
+        name: /employees/i,
       }),
     ).toBeInTheDocument()
   })
@@ -99,7 +99,7 @@ describe('routes', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(
-      screen.queryByRole('heading', { level: 1, name: /salary management/i }),
+      screen.queryByRole('heading', { level: 1, name: /employees/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -112,7 +112,7 @@ describe('routes', () => {
       await screen.findByLabelText(/checking your session/i),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { level: 1, name: /salary management/i }),
+      screen.queryByRole('heading', { level: 1, name: /employees/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -125,7 +125,7 @@ describe('routes', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: /salary management/i,
+        name: /employees/i,
       }),
     ).toBeInTheDocument()
   })
