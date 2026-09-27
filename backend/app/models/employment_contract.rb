@@ -16,6 +16,11 @@ class EmploymentContract < ApplicationRecord
     where("start_date <= ?", date).where("end_date IS NULL OR end_date >= ?", date)
   }
 
+  # Sums all employee-specific compensation components attached to this contract.
+  def total_compensation
+    employee_compensation&.employee_compensation_components&.sum(:amount)
+  end
+
   # The country supplies the currency, and a contract may override it (an
   # expat in India paid in USD keeps India as the contract country). Create only:
   # once set, a currency is not silently re-derived from the country.
