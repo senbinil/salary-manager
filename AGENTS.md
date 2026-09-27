@@ -17,6 +17,7 @@ Area-specific commands, conventions, and pitfalls live in each app's `AGENTS.md`
 
 - Use Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, …).
 - Never commit secrets. Rails secrets go in `backend/config/credentials.yml.enc`; frontend env vars in gitignored `.env` files.
+- `backend/.env.production` holds the live deploy credentials and host values, and is listed in the root `.agentignore`. Never read, print, copy or summarize it, and never inline its values into a tracked file. Its keys are documented in `backend/README.md`; if a deploy fails on a missing value, ask the user to check that key rather than opening the file.
 - Keep build output and dependencies untracked (`node_modules`, logs, coverage) — each app has its own `.gitignore`, plus a root `.agentignore`.
 
 ## Git workflow
