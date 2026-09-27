@@ -48,9 +48,33 @@ const employees = [
   ),
 ]
 
+const filterOptions = {
+  departments: [
+    { id: 1, name: 'Engineering' },
+    { id: 2, name: 'Research' },
+  ],
+  designations: [
+    { id: 1, name: 'Software Engineer' },
+    { id: 2, name: 'Computer Scientist' },
+  ],
+  countries: [
+    { code: 'US', name: 'United States', currency: 'USD' },
+    { code: 'IN', name: 'India', currency: 'INR' },
+  ],
+}
+
 beforeEach(() => {
   axios.get.mockReset()
   axios.get.mockImplementation((url, { params = { page: 1, limit: 20 } } = {}) => {
+    if (url === '/api/v1/departments') {
+      return Promise.resolve({ data: filterOptions.departments })
+    }
+    if (url === '/api/v1/designations') {
+      return Promise.resolve({ data: filterOptions.designations })
+    }
+    if (url === '/api/v1/countries') {
+      return Promise.resolve({ data: filterOptions.countries })
+    }
     if (url !== '/api/v1/employees') {
       throw new Error(`Unexpected request: ${url}`)
     }
@@ -139,6 +163,92 @@ describe('Home employee dashboard', () => {
     })
   })
 
+  it('filters by employment status and requests the first page', async () => {
+    const user = userEvent.setup()
+    renderWithRouter(homeRoutes)
+
+    await screen.findByRole('row', { name: /Ada Lovelace/ })
+    await user.click(screen.getByRole('combobox', { name: 'Status' }))
+    await user.click(screen.getByRole('option', { name: 'Inactive' }))
+
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenLastCalledWith('/api/v1/employees', {
+        params: { page: 1, limit: 20, filter: { employment_status: 'inactive' } },
+      })
+    })
+  })
+
+  it('sends the name and dropdown filters and returns to the first page', async () => {
+    const user = userEvent.setup()
+    renderWithRouter(homeRoutes)
+
+    await screen.findByRole('row', { name: /Ada Lovelace/ })
+    await user.type(screen.getByLabelText('Name'), 'ada')
+    await user.click(screen.getByRole('combobox', { name: 'Department' }))
+    await user.click(screen.getByRole('option', { name: 'Research' }))
+    await user.click(screen.getByRole('combobox', { name: 'Designation' }))
+    await user.click(screen.getByRole('option', { name: 'Computer Scientist' }))
+    await user.click(screen.getByRole('combobox', { name: 'Country' }))
+    await user.click(screen.getByRole('option', { name: 'India' }))
+
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenLastCalledWith('/api/v1/employees', {
+        params: {
+          page: 1,
+          limit: 20,
+          filter: {
+            name_cont: 'ada',
+            department_id: '2',
+            designation_id: '2',
+            country_code: 'IN',
+          },
+        },
+      })
+    })
+  })
+
+  it('keeps spaces in the name field and trims them from the request', async () => {
+    const user = userEvent.setup()
+    renderWithRouter(homeRoutes)
+
+    await screen.findByRole('row', { name: /Ada Lovelace/ })
+    await user.type(screen.getByLabelText('Name'), 'ada lovelace')
+
+    expect(screen.getByLabelText('Name')).toHaveValue('ada lovelace')
+
+    await user.type(screen.getByLabelText('Name'), ' ')
+
+    expect(screen.getByLabelText('Name')).toHaveValue('ada lovelace ')
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenLastCalledWith('/api/v1/employees', {
+        params: { page: 1, limit: 20, filter: { name_cont: 'ada lovelace' } },
+      })
+    })
+  })
+
+  it('clears the filters and requests the unfiltered first page', async () => {
+    const user = userEvent.setup()
+    renderWithRouter(homeRoutes)
+
+    await screen.findByRole('row', { name: /Ada Lovelace/ })
+    await user.type(screen.getByLabelText('Name'), 'ada')
+
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenLastCalledWith('/api/v1/employees', {
+        params: { page: 1, limit: 20, filter: { name_cont: 'ada' } },
+      })
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenLastCalledWith('/api/v1/employees', {
+        params: { page: 1, limit: 20 },
+      })
+    })
+    expect(screen.getByLabelText('Name')).toHaveValue('')
+  })
+
   it('sends a selected page size and returns to the first page', async () => {
     const user = userEvent.setup()
     renderWithRouter(homeRoutes)
@@ -147,7 +257,7 @@ describe('Home employee dashboard', () => {
     await user.click(screen.getByRole('button', { name: 'Go to next page' }))
     await screen.findByRole('row', { name: /Grace Hopper/ })
 
-    await user.click(screen.getByRole('combobox'))
+    await user.click(screen.getByRole('combobox', { name: /rows per page/i }))
     expect(await screen.findByRole('option', { name: '100' })).toBeInTheDocument()
     await user.click(await screen.findByRole('option', { name: '50' }))
 
