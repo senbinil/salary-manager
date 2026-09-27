@@ -26,6 +26,10 @@ Run `bin/ci` before considering work complete — it runs rubocop, bundler-audit
 - API-only: `config.api_only = true`. Controllers inherit from `ActionController::API`; there are no views or helpers. Return JSON, not rendered templates.
 - Database-backed state services: **Solid Queue** (Active Job), **Solid Cache**, **Solid Cable** (Action Cable).
 - Deployment: **Kamal** (`config/deploy.yml`) with **Thruster** as the proxy; production image in `Dockerfile`.
+  - `bin/kamal` loads `backend/.env` and `backend/.env.production` with **dotenv** before starting Kamal, because Kamal 2 itself reads only `.kamal/secrets-common` / `.kamal/secrets`. `config/deploy.yml` interpolates its host values with `<%= ENV.fetch("...") %>`, so never hardcode the server, the API host, the registry user or the database host back into the YAML — add the key to `.env.production` instead.
+  - `config/deploy.yml` deliberately defines **no `accessories:`**. Postgres is the accessory of another Kamal service on the same host, reached by container name over the shared `kamal` docker network; adding a `db` accessory here would start a second Postgres.
+  - `.kamal/secrets` is tracked, so it must stay free of literal secrets: it only maps `$KAMAL_REGISTRY_PASSWORD` / `$BACKEND_DATABASE_PASSWORD` (resolved from `.env.production`) and reads `RAILS_MASTER_KEY` from `config/master.key`.
+  - `production.rb` sets `assume_ssl` and `force_ssl`; the `ssl_options` redirect exclusion for `/up` is required or Kamal's plain-HTTP health check gets a 301 and the deploy is rolled back.
 - Security tooling: **Brakeman**, **bundler-audit**, **rubocop-rails-omakase** (no custom rubocop config).
 - Testing: **RSpec** (`rspec-rails`) with **FactoryBot** (`factory_bot_rails`); specs live in `spec/`, factories in `spec/factories/`.
 - CORS: **`rack-cors`**, configured in `config/initializers/cors.rb`. Allows the origins in `CORS_ORIGINS` (comma-separated; defaults to the Vite dev origins) with credentials, scoped to `/api/v1/*`.
