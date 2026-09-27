@@ -1,6 +1,6 @@
 # Frontend
 
-The frontend is a React 19 single-page application built with Vite. It currently provides a sign-in page, a session-gated application shell, a placeholder Home page, and a not-found page. The employee dashboard is not implemented yet.
+The frontend is a React 19 single-page application built with Vite. It provides a sign-in page, a session-gated application shell, an employee page that shows names from the default employee API page in a table, and a not-found page. Table pagination controls, filters, and employee drill-down are later dashboard slices.
 
 The app uses cookie-session authentication through the Rails API. During development, Vite proxies `/api` requests to the backend at `http://localhost:3000`; start the backend separately.
 
