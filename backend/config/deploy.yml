@@ -90,6 +90,14 @@ volumes:
 builder:
   arch: amd64
 
+  # Build with the daemon's own BuildKit instead of the default `docker-container`
+  # driver. On Docker Desktop for WSL2 the generated builder container cannot start
+  # ("invalid mount config for type bind: bind source path does not exist:
+  # /run/desktop/mnt/host/wsl/..."), so Kamal fails while booting its buildx builder,
+  # before the first build instruction runs. The docker driver builds the same
+  # context without a separate builder container.
+  driver: docker
+
   # # Build image via remote server (useful for faster amd64 builds on arm64 computers)
   # remote: ssh://docker@docker-builder-server
   #
