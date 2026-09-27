@@ -1,15 +1,11 @@
 import Alert from '@mui/material/Alert'
+import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
+import Divider from '@mui/material/Divider'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
@@ -123,19 +119,27 @@ export default function EmployeeDetails() {
 
       {data && (
         <>
-          <Stack spacing={1}>
-            <Typography variant="h4" component="h1">
-              {data.employee.name}
-            </Typography>
-            <Typography color="text.secondary">
-              {data.employee.department_name} · {data.employee.designation_name}
-            </Typography>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+            }}
+          >
+            <Stack spacing={0.5}>
+              <Typography variant="h4" component="h1">
+                {data.employee.name}
+              </Typography>
+              <Typography color="text.secondary">
+                {data.employee.department_name} · {data.employee.designation_name}
+              </Typography>
+            </Stack>
             <Chip
               label={isActive ? 'Active' : 'Inactive'}
               color={isActive ? 'success' : 'default'}
               size="small"
               variant={isActive ? 'filled' : 'outlined'}
-              sx={{ alignSelf: 'flex-start' }}
             />
           </Stack>
 
@@ -146,71 +150,141 @@ export default function EmployeeDetails() {
                 : 'No ended employment contract found.'}
             </Alert>
           ) : (
-            <>
-              <Paper variant="outlined" sx={{ p: 3 }}>
-                <Stack spacing={2}>
-                  <Typography variant="h5" component="h2">
-                    Employment contract
-                  </Typography>
-                  <Typography>
-                    <strong>Country:</strong> {countryName}
-                  </Typography>
-                  <Typography>
-                    <strong>Start date:</strong> {contract.start_date}
-                  </Typography>
-                  <Typography>
-                    <strong>End date:</strong> {contract.end_date ?? 'Ongoing'}
-                  </Typography>
-                  <Typography>
-                    <strong>Currency:</strong> {contract.currency}
-                  </Typography>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={3}
+            >
+              <Paper
+                component="section"
+                aria-labelledby="contract-information-heading"
+                variant="outlined"
+                sx={{ p: { xs: 2, sm: 3 }, flex: { md: '1 1 0' }, minWidth: 0 }}
+              >
+                <Stack spacing={2.5}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="overline" color="text.secondary">
+                      Employment
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      component="h2"
+                      id="contract-information-heading"
+                    >
+                      Contract information
+                    </Typography>
+                  </Stack>
+                  <Divider />
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, minmax(0, 1fr))',
+                      },
+                      gap: 2.5,
+                    }}
+                  >
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        Country
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {countryName}
+                      </Typography>
+                    </Stack>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        Start date
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {contract.start_date}
+                      </Typography>
+                    </Stack>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        End date
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {contract.end_date ?? 'Ongoing'}
+                      </Typography>
+                    </Stack>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        Currency
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {contract.currency}
+                      </Typography>
+                    </Stack>
+                  </Box>
                 </Stack>
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 3 }}>
-                <Stack spacing={2}>
-                  <Typography variant="h5" component="h2">
-                    Compensation · {contract.employee_compensation.compensation_plan.name}
-                  </Typography>
-                  <TableContainer>
-                    <Table aria-label="Compensation components">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Component</TableCell>
-                          <TableCell>Category</TableCell>
-                          <TableCell align="right">Amount</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {contract.employee_compensation.components.length > 0 ? (
-                          contract.employee_compensation.components.map(
-                            (component) => (
-                              <TableRow key={component.salary_component.id}>
-                                <TableCell component="th" scope="row">
-                                  {component.salary_component.name}
-                                </TableCell>
-                                <TableCell>
-                                  {component.salary_component.category}
-                                </TableCell>
-                                <TableCell align="right">
-                                  {formatAmount(component.amount, contract.currency)}
-                                </TableCell>
-                              </TableRow>
-                            ),
-                          )
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={3}>
-                              No compensation components.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+              <Paper
+                component="section"
+                aria-labelledby="compensation-heading"
+                variant="outlined"
+                sx={{ p: { xs: 2, sm: 3 }, flex: { md: '1 1 0' }, minWidth: 0 }}
+              >
+                <Stack spacing={2.5}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="overline" color="text.secondary">
+                      Compensation plan
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      component="h2"
+                      id="compensation-heading"
+                    >
+                      {contract.employee_compensation.compensation_plan.name}
+                    </Typography>
+                  </Stack>
+                  <Divider />
+                  {contract.employee_compensation.components.length > 0 ? (
+                    <Stack divider={<Divider flexItem />} spacing={1.5}>
+                      {contract.employee_compensation.components.map(
+                        (component) => (
+                          <Box
+                            key={component.salary_component.id}
+                            sx={{
+                              display: 'grid',
+                              gridTemplateColumns: 'minmax(0, 1fr) max-content',
+                              columnGap: 2,
+                              alignItems: 'start',
+                            }}
+                          >
+                            <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+                              <Typography sx={{ fontWeight: 700 }}>
+                                {component.salary_component.name}
+                              </Typography>
+                              <Chip
+                                label={component.salary_component.category}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  alignSelf: 'flex-start',
+                                  textTransform: 'capitalize',
+                                }}
+                              />
+                            </Stack>
+                            <Typography
+                              fontWeight={600}
+                              sx={{ textAlign: 'right', whiteSpace: 'nowrap' }}
+                            >
+                              {formatAmount(component.amount, contract.currency)}
+                            </Typography>
+                          </Box>
+                        ),
+                      )}
+                    </Stack>
+                  ) : (
+                    <Typography color="text.secondary">
+                      No compensation components.
+                    </Typography>
+                  )}
                 </Stack>
               </Paper>
-            </>
+            </Stack>
           )}
         </>
       )}
