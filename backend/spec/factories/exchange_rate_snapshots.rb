@@ -6,6 +6,6 @@ FactoryBot.define do
     rate { BigDecimal("83.250000000000") }
     rate_date { Date.current.beginning_of_month }
     source { "Frankfurter" }
-    provider_attribution { ["ECB"] }
+    provider_attribution { [ "ECB" ] }
   end
 end
