@@ -56,7 +56,9 @@ development:
   #min_messages: notice
 
   # Solid Queue keeps its own database and schema (db/queue_schema.rb); the
-  # migrations path below keeps application migrations off it.
+  # migrations path below keeps application migrations off it. DATABASE_URL only
+  # overrides the primary config, so mirror it here to keep the queue database on
+  # whichever server the application is pointed at (CI sets DATABASE_URL).
   queue:
     <<: *default
     database: backend_development_queue
@@ -64,6 +66,7 @@ development:
     username: <%= Rails.application.credentials.dig(:development, :db, :username) %>
     password: <%= Rails.application.credentials.dig(:development, :db, :password) %>
     migrations_paths: db/queue_migrate
+    url: <%= ENV["DATABASE_URL"] %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -82,6 +85,7 @@ test:
     username: <%= Rails.application.credentials.dig(:development, :db, :username) %>
     password: <%= Rails.application.credentials.dig(:development, :db, :password) %>
     migrations_paths: db/queue_migrate
+    url: <%= ENV["DATABASE_URL"] %>
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is
