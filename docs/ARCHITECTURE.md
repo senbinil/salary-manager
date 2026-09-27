@@ -72,7 +72,7 @@ The dashboard roster includes all employees, whether active or inactive. An empl
 
 Total compensation is the sum of every component category on the current active contract. An employee without an active contract has no current total. The employee list response returns `total_compensation` and `total_compensation_currency`; both are null when there is no active contract. The currency is the contract currency, which may differ from the country's default. The employee detail response returns `total_compensation` as a decimal string or null. These employee endpoints return native contract-currency totals and do not apply FX conversion.
 
-Selecting an employee opens its detail page. The page selects the active contract for an active employee and the most recent ended contract for an inactive employee. If no applicable contract is found, it shows an informational message. The contract and compensation panels are side by side on medium and larger screens and stacked on narrow screens. Component categories use chips; contract values, component values, and the active-contract total use bold emphasis. The total is shown only for an active contract.
+Selecting an employee opens its detail page. The page selects the active contract for an active employee and the most recent ended contract for an inactive employee. If no applicable contract is found, it shows an informational message. The contract and compensation panels are side by side on medium and larger screens and stacked on narrow screens. Component categories use chips; contract values, component values, and the active-contract total use bold emphasis. The total is shown only for an active contract. An active employee's page also offers a display-currency selector built from the targets the conversion endpoint reports; the converted total and its rate date appear beside the native total, which stays visible with an explanation when a rate is missing or the request fails. Inactive employees request no conversion.
 
 The contract endpoints continue to expose an employee's contract history, ordered by start date, and a single contract scoped to that employee. The current detail UI selects one contract automatically instead of offering a contract-history selector. Dashboard filters remain future work.
 
@@ -85,7 +85,7 @@ Index ordering, authentication, employee scoping, and 404 behavior remain unchan
 
 Contract responses keep their existing fields, including top-level compensation_plan_id for compatibility. That ID is derived from the associated employee compensation. Responses add employee_compensation containing its ID, a compensation_plan object with ID and name, and components with amount plus salary component ID, name, and category. All categories are included, ordered by compensation amount descending. Amount serialization retains the existing decimal JSON format.
 
-The separate authenticated `POST /api/v1/exchange_rates/convert` endpoint accepts an amount and three-letter source and target currency codes. It uses the current month's stored snapshot, returns available targets for the source currency, and does not call the provider. Matching currencies return the input amount with rate 1 and no rate date. If a requested pair has no current-month snapshot, the conversion amount, rate, and rate date are null. Invalid amounts or currency codes return 422. The frontend does not yet consume this endpoint.
+The separate authenticated `POST /api/v1/exchange_rates/convert` endpoint accepts an amount and three-letter source and target currency codes. It uses the current month's stored snapshot, returns available targets for the source currency, and does not call the provider. Matching currencies return the input amount with rate 1 and no rate date. If a requested pair has no current-month snapshot, the conversion amount, rate, and rate date are null. Invalid amounts or currency codes return 422. The employee detail page consumes this endpoint for active employees; the employee endpoints themselves do not convert.
 
 ## 7. Schema transition
 
@@ -99,7 +99,7 @@ In production, `FetchExchangeRateSnapshotsJob` is scheduled for 02:00 on the las
 
 `ExchangeRateConversionService` reads only snapshots for the current month. The conversion endpoint reports target currencies present for the requested base currency, plus the base currency itself. Same-currency conversions return the original amount with a rate of 1; a missing pair produces no converted value. There is no live request or prior-month fallback. `rate_date` records which provider observation supplied a conversion.
 
-The endpoint is independent of employee controllers. The current frontend continues to show native contract-currency totals; displaying the converted value on employee details is a planned follow-up. There is no reporting-period selector, aggregate report endpoint, or stored report result.
+The endpoint is independent of employee controllers. Employee detail pages show native contract-currency totals and, for active employees, an optional converted total. There is no reporting-period selector, aggregate report endpoint, or stored report result.
 
 ## 9. Deferred items
 
@@ -113,4 +113,4 @@ The endpoint is independent of employee controllers. The current frontend contin
 
 ## 10. Decision history
 
-The reason and alternatives for the compensation ownership change are recorded in [ADR-0001: Employee-specific compensation](./decisions/ADR-0001-employee-specific-compensation.md). Dashboard, drill-down, and total-summary decisions are recorded in [ADR-0002](./decisions/ADR-0002-employee-dashboard-and-totals.md). FX model, provider, importer, conversion API, and planned UI decisions are recorded in [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md). Earlier architecture and implementation plans are preserved in the archive and remain historical, not implementation guidance.
+The reason and alternatives for the compensation ownership change are recorded in [ADR-0001: Employee-specific compensation](./decisions/ADR-0001-employee-specific-compensation.md). Dashboard, drill-down, and total-summary decisions are recorded in [ADR-0002](./decisions/ADR-0002-employee-dashboard-and-totals.md). FX model, provider, importer, conversion API, and UI decisions are recorded in [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md). Earlier architecture and implementation plans are preserved in the archive and remain historical, not implementation guidance.

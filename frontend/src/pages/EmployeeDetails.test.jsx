@@ -6,7 +6,7 @@ import { renderWithRouter } from '../test/render.jsx'
 import { routes } from '../router/routes.js'
 
 vi.mock('axios', () => ({
-  default: { get: vi.fn() },
+  default: { get: vi.fn(), post: vi.fn() },
 }))
 
 const dateOffset = (days) => {
@@ -60,8 +60,27 @@ const makeContract = ({
 
 const countryList = [{ code: 'IN', name: 'India', currency: 'INR' }]
 
+function mockExchangeRateApi({
+  availableTargets = ['INR', 'USD'],
+  convert = ({ amount, from_currency, to_currency }) => ({
+    amount,
+    from_currency,
+    to_currency,
+    converted_amount: amount,
+    rate: '1',
+    rate_date: null,
+    available_target_currencies: availableTargets,
+  }),
+} = {}) {
+  axios.post.mockImplementation((_url, payload) =>
+    Promise.resolve({ data: convert(payload) }),
+  )
+}
+
 function mockEmployeeApi(employee, contracts, employees = [employee]) {
   axios.get.mockReset()
+  axios.post.mockReset()
+  mockExchangeRateApi()
   axios.get.mockImplementation((url, { params } = {}) => {
     if (url === '/api/v1/me') {
       return Promise.resolve({ data: { id: 1, email: 'person@example.com' } })
@@ -150,10 +169,13 @@ describe('Employee contract drill-down', () => {
     expect(screen.getByText('India')).toBeInTheDocument()
     expect(screen.getByText('India')).toHaveStyle({ fontWeight: '700' })
     const formattedAmounts = screen.getAllByText(/1,250\.75/)
-    expect(formattedAmounts).toHaveLength(2)
+    expect(formattedAmounts).toHaveLength(3)
     expect(formattedAmounts[0]).toHaveStyle({ textAlign: 'right' })
     expect(screen.getByText('Total compensation')).toBeInTheDocument()
     expect(screen.getByText('Total compensation').parentElement).toHaveTextContent(
+      '₹1,250.75',
+    )
+    expect(screen.getByText('Converted total').parentElement).toHaveTextContent(
       '₹1,250.75',
     )
     expect(screen.getByText('Active')).toBeInTheDocument()
@@ -199,6 +221,7 @@ describe('Employee contract drill-down', () => {
     expect(screen.getByText('Latest ended salary')).toBeInTheDocument()
     expect(screen.getByText('Inactive')).toBeInTheDocument()
     expect(screen.queryByText('Total compensation')).not.toBeInTheDocument()
+    expect(axios.post).not.toHaveBeenCalled()
     expect(screen.queryByText('Earlier salary')).not.toBeInTheDocument()
     expect(screen.queryByText('Future salary')).not.toBeInTheDocument()
   })
@@ -272,5 +295,180 @@ describe('Employee contract drill-down', () => {
     expect(
       screen.getByRole('link', { name: 'Back to employees' }),
     ).toHaveAttribute('href', '/dashboard')
+  })
+
+  it('defaults to the contract currency and offers only available targets', async () => {
+    const employee = makeEmployee(7, 'Ada Lovelace', 'active', '1250.7500')
+    const contract = makeContract({
+      id: 1,
+      startOffset: -30,
+      endOffset: null,
+      currency: 'INR',
+      planName: 'Engineering',
+      componentName: 'Base salary',
+    })
+    mockEmployeeApi(employee, [contract])
+
+    const user = userEvent.setup()
+    renderWithRouter(routes, { route: '/employees/7' })
+
+    const currencySelect = await screen.findByRole('combobox', {
+      name: 'Display currency',
+    })
+    expect(currencySelect).toHaveTextContent('INR')
+    expect(axios.post).toHaveBeenCalledWith('/api/v1/exchange_rates/convert', {
+      amount: '1250.7500',
+      from_currency: 'INR',
+      to_currency: 'INR',
+    })
+
+    await user.click(currencySelect)
+    expect(await screen.findByRole('option', { name: 'USD' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'EUR' })).not.toBeInTheDocument()
+  })
+
+  it('shows the converted amount and rate date after selecting a target currency', async () => {
+    const employee = makeEmployee(7, 'Ada Lovelace', 'active', '1250.7500')
+    const contract = makeContract({
+      id: 1,
+      startOffset: -30,
+      endOffset: null,
+      currency: 'INR',
+      planName: 'Engineering',
+      componentName: 'Base salary',
+    })
+    mockEmployeeApi(employee, [contract])
+    mockExchangeRateApi({
+      convert: ({ amount, from_currency, to_currency }) =>
+        to_currency === 'USD'
+          ? {
+              amount,
+              from_currency,
+              to_currency,
+              converted_amount: '15.25915',
+              rate: '0.0122',
+              rate_date: '2026-09-01',
+              available_target_currencies: ['INR', 'USD'],
+            }
+          : {
+              amount,
+              from_currency,
+              to_currency,
+              converted_amount: amount,
+              rate: '1',
+              rate_date: null,
+              available_target_currencies: ['INR', 'USD'],
+            },
+    })
+
+    const user = userEvent.setup()
+    renderWithRouter(routes, { route: '/employees/7' })
+
+    await user.click(
+      await screen.findByRole('combobox', { name: 'Display currency' }),
+    )
+    await user.click(await screen.findByRole('option', { name: 'USD' }))
+
+    expect(await screen.findByText(/15\.26/)).toBeInTheDocument()
+    expect(screen.getByText('Rate date: 2026-09-01')).toBeInTheDocument()
+    expect(screen.getByText('Total compensation').parentElement).toHaveTextContent(
+      '₹1,250.75',
+    )
+    expect(axios.post).toHaveBeenLastCalledWith(
+      '/api/v1/exchange_rates/convert',
+      {
+        amount: '1250.7500',
+        from_currency: 'INR',
+        to_currency: 'USD',
+      },
+    )
+  })
+
+  it('explains when no alternate currencies are available and keeps the native total', async () => {
+    const employee = makeEmployee(7, 'Ada Lovelace', 'active', '1250.7500')
+    const contract = makeContract({
+      id: 1,
+      startOffset: -30,
+      endOffset: null,
+      currency: 'INR',
+      planName: 'Engineering',
+      componentName: 'Base salary',
+    })
+    mockEmployeeApi(employee, [contract])
+    mockExchangeRateApi({ availableTargets: ['INR'] })
+
+    renderWithRouter(routes, { route: '/employees/7' })
+
+    expect(
+      await screen.findByText('No other currencies are available this month.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Converted total')).not.toBeInTheDocument()
+    expect(screen.getByText('Total compensation').parentElement).toHaveTextContent(
+      '₹1,250.75',
+    )
+  })
+
+  it('explains when a selected pair has no current-month rate', async () => {
+    const employee = makeEmployee(7, 'Ada Lovelace', 'active', '1250.7500')
+    const contract = makeContract({
+      id: 1,
+      startOffset: -30,
+      endOffset: null,
+      currency: 'INR',
+      planName: 'Engineering',
+      componentName: 'Base salary',
+    })
+    mockEmployeeApi(employee, [contract])
+    mockExchangeRateApi({
+      convert: ({ amount, from_currency, to_currency }) => ({
+        amount,
+        from_currency,
+        to_currency,
+        converted_amount: to_currency === 'INR' ? amount : null,
+        rate: to_currency === 'INR' ? '1' : null,
+        rate_date: null,
+        available_target_currencies: ['INR', 'USD'],
+      }),
+    })
+
+    const user = userEvent.setup()
+    renderWithRouter(routes, { route: '/employees/7' })
+
+    await user.click(
+      await screen.findByRole('combobox', { name: 'Display currency' }),
+    )
+    await user.click(await screen.findByRole('option', { name: 'USD' }))
+
+    expect(
+      await screen.findByText('No current-month rate is available for USD.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Total compensation').parentElement).toHaveTextContent(
+      '₹1,250.75',
+    )
+  })
+
+  it('keeps the native total visible and explains conversion request failures', async () => {
+    const employee = makeEmployee(7, 'Ada Lovelace', 'active', '1250.7500')
+    const contract = makeContract({
+      id: 1,
+      startOffset: -30,
+      endOffset: null,
+      currency: 'INR',
+      planName: 'Engineering',
+      componentName: 'Base salary',
+    })
+    mockEmployeeApi(employee, [contract])
+    axios.post.mockRejectedValue(new Error('Network unavailable'))
+
+    renderWithRouter(routes, { route: '/employees/7' })
+
+    expect(
+      await screen.findByText(
+        'Currency conversion is currently unavailable. Your native total is still shown.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Total compensation').parentElement).toHaveTextContent(
+      '₹1,250.75',
+    )
   })
 })

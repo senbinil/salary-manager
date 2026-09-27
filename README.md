@@ -7,7 +7,7 @@ Salary Manager is a monorepo for managing employee contracts and employee-specif
 - The backend provides cookie-session authentication and read endpoints for employees, reference data, and nested employment contracts.
 - Each employment contract has one `EmployeeCompensation`. Compensation plans are reusable filter tags; component amounts belong to that contract's compensation and use the contract currency.
 - `EmployeeCompensation` supports nested component assignment at the model layer. There are no HTTP contract create/update endpoints.
-- The frontend provides sign-in, a session-gated shell, a paginated employee table with active-contract details and total compensation, and an employee contract drill-down. Dashboard filters and reporting UI remain future work.
+- The frontend provides sign-in, a session-gated shell, a paginated employee table with active-contract details and total compensation, and an employee contract drill-down that can display an active employee's total in another available currency. Dashboard filters and reporting UI remain future work.
 - There is no payroll run, aggregate report endpoint, reporting-month selector, or currency-normalization feature.
 
 ## API documentation

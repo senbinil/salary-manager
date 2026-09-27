@@ -1,6 +1,6 @@
 # Salary Manager Workflow and Overview
 
-This guide is for developers joining the project or changing the employee compensation and currency-conversion flows. It describes current behavior first and labels the frontend FX integration as planned. For entity details, see the [architecture](./ARCHITECTURE.md); for implementation phases, see the [implementation plan](./IMPLEMENTATION-PLAN.md).
+This guide is for developers joining the project or changing the employee compensation and currency-conversion flows. It describes current behavior first, including the FX display on employee details. For entity details, see the [architecture](./ARCHITECTURE.md); for implementation phases, see the [implementation plan](./IMPLEMENTATION-PLAN.md).
 
 ## System at a glance
 
@@ -16,10 +16,10 @@ flowchart LR
     Scheduler[Monthly production schedule] --> Importer[Snapshot import job]
     Importer --> Provider[Frankfurter rates API]
     Importer --> Snapshots[(Monthly rate snapshots)]
-    UI -. planned conversion request .-> ConvertAPI[Authenticated conversion endpoint]
+    UI -->|conversion request for active employees| ConvertAPI[Authenticated conversion endpoint]
     ConvertAPI --> ConvertService[Conversion service]
     ConvertService --> Snapshots
-    ConvertService -. current-month result .-> UI
+    ConvertService -->|converted amount and rate date| UI
 ```
 
 ## Employee and compensation workflow
@@ -28,6 +28,7 @@ flowchart LR
 2. The dashboard requests a page from `GET /api/v1/employees`. It lists active and inactive employees. Active contract location, start date, status, total, and total currency come from the contract whose dates include today. Inactive employees remain in the roster with no current contract details or total.
 3. Selecting an employee opens its detail page. The frontend reads the employee, contract history, and country reference data. It selects the active contract for an active employee, or the most recently ended contract for an inactive employee.
 4. Contract compensation components belong to that contract's `EmployeeCompensation`. Each row holds an amount and references shared salary-component vocabulary; the plan is a classification tag. The native total sums all component categories in the contract currency.
+5. For an active employee with a total, the detail page requests conversion for the contract currency to learn which targets the current month supports. Choosing a target shows the converted total and the rate's observation date; the native total stays visible, and a missing rate or failed request is explained rather than hidden. Inactive employees never request conversion.
 
 ```mermaid
 flowchart LR
@@ -81,7 +82,7 @@ Clients use authenticated `POST /api/v1/exchange_rates/convert` with `amount`, `
 - The endpoint does not make a live provider request and does not use a previous month's rate.
 - `rate_date` on a successful cross-currency conversion identifies the provider observation used.
 
-The API is implemented, but the current frontend does not call it yet. The planned employee detail integration applies only to active employees, keeps the native total visible, defaults the target to the contract currency, and offers only targets returned by the API. It will show the rate date for a conversion and explain unavailability or request failure without hiding the native amount.
+The employee detail page calls this endpoint for active employees only. It keeps the native total visible, defaults the target to the contract currency, and offers only targets returned by the API. A conversion shows the rate date; a missing rate or failed request is explained without hiding the native amount. Inactive employees never request conversion.
 
 ## Where to make changes
 
@@ -93,6 +94,6 @@ The API is implemented, but the current frontend does not call it yet. The plann
 | Provider transport | `FrankfurterClient` and service specs |
 | Monthly import behavior and schedule | `FetchExchangeRateSnapshotsJob`, job specs, and `config/recurring.yml` |
 | Conversion request and response | `ExchangeRatesController`, `ExchangeRateConversionService`, request/service specs, and `backend/doc/openapi.yml` |
-| Employee detail UI and planned FX display | `frontend/src/pages/EmployeeDetails.jsx` and colocated tests |
+| Employee detail UI and FX display | `frontend/src/pages/EmployeeDetails.jsx` and colocated tests |
 
 The complete route and schema reference is [backend/doc/openapi.yml](../backend/doc/openapi.yml). FX decisions by phase are in [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md). Payroll, aggregate reporting, dashboard filters, and contract write endpoints are not implemented.

@@ -4,11 +4,16 @@ import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Divider from '@mui/material/Divider'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
+import Select from '@mui/material/Select'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { errorMessage } from '../api/errorMessage.js'
 import { paths } from '../router/paths.js'
@@ -59,6 +64,7 @@ function formatAmount(amount, currency) {
 
 export default function EmployeeDetails() {
   const { employeeId } = useParams()
+  const [selectedCurrency, setSelectedCurrency] = useState(null)
 
   const { data, isPending, error } = useQuery({
     queryKey: ['employee-contract-details', employeeId],
@@ -96,6 +102,50 @@ export default function EmployeeDetails() {
     ? data.countries.find((country) => country.code === contract.country_code)
         ?.name ?? contract.country_code
     : null
+  const totalCompensation = data?.employee.total_compensation
+  const canConvertTotal =
+    isActive &&
+    contract &&
+    totalCompensation !== null &&
+    totalCompensation !== undefined
+  const displayCurrency =
+    selectedCurrency && selectedCurrency.contractId === contract?.id
+      ? selectedCurrency.currency
+      : contract?.currency
+  const conversionQuery = useQuery({
+    queryKey: [
+      'employee-compensation-conversion',
+      employeeId,
+      contract?.id,
+      totalCompensation,
+      contract?.currency,
+      displayCurrency,
+    ],
+    queryFn: async () => {
+      const response = await axios.post('/api/v1/exchange_rates/convert', {
+        amount: String(totalCompensation),
+        from_currency: contract.currency,
+        to_currency: displayCurrency,
+      })
+
+      return response.data
+    },
+    enabled: Boolean(canConvertTotal && displayCurrency),
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey?.[2] === contract?.id
+        ? previousData
+        : undefined,
+  })
+  const availableCurrencies =
+    conversionQuery.data?.available_target_currencies ?? []
+  const currencyOptions = availableCurrencies.length
+    ? availableCurrencies
+    : contract
+      ? [contract.currency]
+      : []
+  const currentConversion = conversionQuery.isPlaceholderData
+    ? null
+    : conversionQuery.data
 
   return (
     <Stack spacing={3}>
@@ -311,6 +361,103 @@ export default function EmployeeDetails() {
                             )}
                           </Typography>
                         </Box>
+                        <Divider />
+                        <Stack spacing={1.5}>
+                          <FormControl size="small" fullWidth>
+                            <InputLabel id={`display-currency-label-${contract.id}`}>
+                              Display currency
+                            </InputLabel>
+                            <Select
+                              labelId={`display-currency-label-${contract.id}`}
+                              id={`display-currency-${contract.id}`}
+                              value={displayCurrency}
+                              label="Display currency"
+                              disabled={currencyOptions.length < 2}
+                              onChange={(event) =>
+                                setSelectedCurrency({
+                                  contractId: contract.id,
+                                  currency: event.target.value,
+                                })
+                              }
+                            >
+                              {currencyOptions.map((currency) => (
+                                <MenuItem key={currency} value={currency}>
+                                  {currency}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+
+                          {conversionQuery.isFetching && (
+                            <Typography role="status" color="text.secondary">
+                              Loading currency conversion…
+                            </Typography>
+                          )}
+
+                          {conversionQuery.isError && (
+                            <Alert severity="info">
+                              Currency conversion is currently unavailable. Your
+                              native total is still shown.
+                            </Alert>
+                          )}
+
+                          {!conversionQuery.isFetching &&
+                            !conversionQuery.isError &&
+                            currentConversion?.converted_amount === null && (
+                              <Alert severity="info">
+                                No current-month rate is available for {displayCurrency}.
+                              </Alert>
+                            )}
+
+                          {!conversionQuery.isFetching &&
+                            !conversionQuery.isError &&
+                            availableCurrencies.length > 1 &&
+                            currentConversion?.converted_amount !== null &&
+                            currentConversion?.converted_amount !== undefined && (
+                              <>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                  }}
+                                >
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    Converted total
+                                  </Typography>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 700,
+                                      textAlign: 'right',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {formatAmount(
+                                      currentConversion.converted_amount,
+                                      displayCurrency,
+                                    )}
+                                  </Typography>
+                                </Box>
+                                {currentConversion.rate_date && (
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    Rate date: {currentConversion.rate_date}
+                                  </Typography>
+                                )}
+                              </>
+                            )}
+
+                          {!conversionQuery.isFetching &&
+                            !conversionQuery.isError &&
+                            availableCurrencies.length <= 1 && (
+                              <Typography variant="body2" color="text.secondary">
+                                No other currencies are available this month.
+                              </Typography>
+                            )}
+                        </Stack>
                       </>
                     )}
                 </Stack>
