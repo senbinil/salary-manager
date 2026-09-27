@@ -39,11 +39,13 @@ RSpec.describe "Employees", type: :request do
           { "id" => ada.id, "name" => "Ada", "department_id" => department.id,
             "department_name" => department.name, "designation_id" => designation.id,
             "designation_name" => designation.name, "user_id" => nil,
-            "employment_status" => "inactive", "country_name" => nil, "contract_start_date" => nil },
+            "employment_status" => "inactive", "country_name" => nil, "contract_start_date" => nil,
+            "total_compensation" => nil, "total_compensation_currency" => nil },
           { "id" => zoe.id, "name" => "Zoe", "department_id" => department.id,
             "department_name" => department.name, "designation_id" => designation.id,
             "designation_name" => designation.name, "user_id" => nil,
-            "employment_status" => "inactive", "country_name" => nil, "contract_start_date" => nil }
+            "employment_status" => "inactive", "country_name" => nil, "contract_start_date" => nil,
+            "total_compensation" => nil, "total_compensation_currency" => nil }
         )
         expect(json_body["pagination"]).to include(
           "page" => 1,
@@ -117,7 +119,8 @@ RSpec.describe "Employees", type: :request do
 
         expect(json_body["data"].first.keys).to contain_exactly(
           "id", "name", "department_id", "department_name", "designation_id", "designation_name",
-          "user_id", "employment_status", "country_name", "contract_start_date"
+          "user_id", "employment_status", "country_name", "contract_start_date",
+          "total_compensation", "total_compensation_currency"
         )
       end
 
@@ -142,12 +145,41 @@ RSpec.describe "Employees", type: :request do
         expect(rows[ada.id]).to include(
           "employment_status" => "active",
           "country_name" => country.name,
-          "contract_start_date" => active_contract.start_date.as_json
+          "contract_start_date" => active_contract.start_date.as_json,
+          "total_compensation" => active_contract.total_compensation.as_json,
+          "total_compensation_currency" => active_contract.currency
         )
         expect(rows[zoe.id]).to include(
           "employment_status" => "inactive",
           "country_name" => nil,
-          "contract_start_date" => nil
+          "contract_start_date" => nil,
+          "total_compensation" => nil,
+          "total_compensation_currency" => nil
+        )
+      end
+
+      it "returns the total and currency for an active contract in the employee list" do
+        contract = create(
+          :employment_contract,
+          employee: ada,
+          start_date: Date.current - 10.days,
+          currency: "USD"
+        )
+        components = contract.employee_compensation.employee_compensation_components
+        components.first.update!(amount: BigDecimal("10000.1250"))
+        create(
+          :employee_compensation_component,
+          employee_compensation: contract.employee_compensation,
+          salary_component: create(:salary_component, category: :allowance),
+          amount: BigDecimal("250.2500")
+        )
+
+        get "/api/v1/employees"
+
+        row = json_body["data"].find { |employee| employee["id"] == ada.id }
+        expect(row).to include(
+          "total_compensation" => BigDecimal("10250.3750").as_json,
+          "total_compensation_currency" => "USD"
         )
       end
     end
