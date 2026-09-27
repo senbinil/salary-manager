@@ -4,11 +4,11 @@ This plan replaces the v0.5 implementation plan, preserved at [archive/IMPLEMENT
 
 ## Status
 
-Phases 1–5 of the v0.6 model and API sequence are complete. In Phase 6, the employee API pagination and the first frontend slices are complete: the dashboard displays employee names in a table, and its page navigation and page-size selector use the API `page` and `limit` parameters. Filters and contract drill-down remain future slices. A follow-up adds nested component attributes to `EmployeeCompensation` at the model layer only; no HTTP contract write route was added. The phases below record the delivery sequence.
+Phases 1–9 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. Payroll, reporting, and dashboard filters remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
 
 ## Delivery approach
 
-Work on a feature branch, in the phases below. Keep each phase reviewable, use Conventional Commits, and commit specs before their implementation. Never commit, push, or merge directly to main.
+Work on a feature branch, in the phases below. Keep each phase reviewable and use Conventional Commits. Use test-first commits within each application: commit the frontend test before its UI feature, and commit the backend spec before its backend feature. Never commit, push, or merge directly to main.
 
 ## Phase 1 — Record and publish the architecture decision
 
@@ -52,7 +52,7 @@ Work on a feature branch, in the phases below. Keep each phase reviewable, use C
 
 ## Phase 6 — Employee list and dashboard
 
-The frontend dashboard is being delivered in focused slices. The employee table is name-only and paginated; filters and contract drill-down follow separately.
+The dashboard was delivered in focused slices. Its current table shows organizational details and current-contract status while keeping all employees in the roster.
 
 ### Slice 6.1 — Paginate the employee API (complete)
 
@@ -64,14 +64,46 @@ The frontend dashboard is being delivered in focused slices. The employee table 
 ### Slice 6.2 — Basic employee table (complete)
 
 - Fetch the default page from the paginated employee endpoint and display employee names in a table.
-- Keep the table name-only for this first slice; do not add dashboard filters or contract drill-down here.
+- Keep the first table slice name-only; add contract details in Slice 6.4.
 - Show loading, error, and empty states.
 
 ### Slice 6.3 — Table pagination controls (complete)
 
 - Add page navigation and a page-size selector to the employee table.
 - Send one-based `page` and the selected `limit` to the API; keep the selector within the API maximum of 100.
-- Defer combined employee/contract filters and contract drill-down to a later slice. Add no report endpoint.
+- Add no combined employee/contract filters or report endpoint in this slice.
+
+### Slice 6.4 — Employee table details (complete)
+
+- Add department, designation, current active contract country, and current contract start date to the employee list API and table.
+- Keep inactive employees in the list. Derive status from whether a contract is active today; show a dash for current-contract fields when inactive.
+- Place the status column last.
+
+## Phase 7 — Employee contract drill-down (complete)
+
+- Link each dashboard employee name to the employee detail page.
+- Show the active contract for an active employee. For an inactive employee, show their most recent ended contract; show an informational empty state if no matching contract exists.
+- Reuse the existing employee and nested contract read APIs; add no contract write route.
+- Keep contract information and compensation plan side by side on medium and larger screens and stack them on small screens. Align component amounts, show each category as a chip, and emphasize contract values and compensation amounts.
+- Retain the API's full contract history even though the detail page selects one contract automatically.
+
+## Phase 8 — Employee total compensation (complete)
+
+- Add `EmploymentContract#total_compensation` to sum every employee-specific component amount without category filtering, and `Employee#total_compensation` to delegate to the current active contract.
+- Return `nil` when there is no active contract. If multiple active contracts exist despite overlap validation, choose the one with the latest start date.
+- Expose the employee total on `GET /api/v1/employees/:id` as a decimal string or `null`; keep the helper on the model and out of unrelated API responses.
+- Show the total on the active employee detail page, formatted in the active contract currency. Do not show a current total on an inactive employee's historical contract page.
+
+## Phase 9 — Dashboard total compensation (complete)
+
+- Add `total_compensation` and `total_compensation_currency` to employee list items. Both are `null` without an active contract; use the active contract currency rather than inferring currency from country.
+- Eager-load active compensation components while listing employees so the page can calculate each summary without a separate aggregate endpoint.
+- Add a currency-formatted Total compensation column before the final Status column. Inactive employees show a dash.
+- Keep the list paginated and include no report-period selector, cross-currency conversion, payroll calculation, or aggregate report endpoint.
+
+## Deferred — sample dashboard seed data
+
+The implementation discussion selected a sample dataset of about 100 employees with sample contracts. The agreed reset scope was all employees, employment contracts, and employee compensation data, while preserving accounts and reference data, with a warning before the reset. This seed change is not part of the current implementation: `backend/db/seeds.rb` remains the Rails template stub. Treat the dataset and reset behavior as pending until a seed feature is implemented and reviewed.
 
 ## Verification
 

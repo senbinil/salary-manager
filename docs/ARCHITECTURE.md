@@ -15,7 +15,7 @@ In v0.6, amounts belong to an employee's compensation record on their employment
 3. A contract has one currency. All component amounts on its employee compensation use that currency; component rows do not store currency.
 4. Compensation plans are reusable labels for filtering. They do not own component amounts.
 5. Salary components are reusable definitions containing a name and category. They do not own amounts.
-6. Employee compensation supports all existing categories: earning, allowance, and contribution.
+6. Employee compensation supports all existing categories: earning, allowance, and contribution. The current total compensation summary sums every category.
 7. Amounts retain decimal precision 16, scale 4. Compensation data has no effective date or reporting-period field, and the dashboard design has no month selector.
 8. The dashboard is a live view of employee and contract data. There is no payroll run, persisted report result, reporting-period selector, or aggregate report endpoint.
 
@@ -62,13 +62,19 @@ A salary component is reusable vocabulary: unique name and category (earning, al
 
 The contract currency is the currency for every amount in its employee compensation. For example, a contract in India may use USD; the contract retains India as its country and USD as its currency. No component has a separate currency.
 
-The component breakdown can contain all existing categories. If a compensation total is shown, earning and allowance count toward it; contribution remains a separate component and is not included in that total. This model change does not add net-pay or payable calculations.
+The component breakdown can contain all existing categories. The current total compensation helper sums every component amount, including earning, allowance, and contribution, on the selected active contract. It is a direct sum in the contract currency; it is not a net-pay, tax, or payable calculation. No currency conversion is applied.
 
 Amounts are not effective-dated within a contract. Editing an employee compensation component changes that contract's next response. A compensation-plan tag change only changes classification and filtering; it does not change component amounts.
 
 ## 6. Dashboard and API behavior
 
-The dashboard roster includes all employees. For a current compensation summary it will use the employee's contract active today, when one exists; employees without an active contract remain in the roster without current-contract compensation. Employee drill-down will retain access to the employee's contract history. The initial UI displays employee names in a table with server-backed pagination controls. Filters and contract drill-down remain future slices.
+The dashboard roster includes all employees, whether active or inactive. An employee is active when a contract includes today's date, with both start and end dates inclusive and a null end date treated as ongoing. The paginated table shows name, department, designation, active contract country and start date, total compensation, and status; status is the last column. Contract fields and compensation are blank for employees without a current active contract.
+
+Total compensation is the sum of every component category on the current active contract. An employee without an active contract has no current total. The employee list response returns `total_compensation` and `total_compensation_currency`; both are null when there is no active contract. The currency is the contract currency, which may differ from the country's default. The employee detail response returns `total_compensation` as a decimal string or null.
+
+Selecting an employee opens its detail page. The page selects the active contract for an active employee and the most recent ended contract for an inactive employee. If no applicable contract is found, it shows an informational message. The contract and compensation panels are side by side on medium and larger screens and stacked on narrow screens. Component categories use chips; contract values, component values, and the active-contract total use bold emphasis. The total is shown only for an active contract.
+
+The contract endpoints continue to expose an employee's contract history, ordered by start date, and a single contract scoped to that employee. The current detail UI selects one contract automatically instead of offering a contract-history selector. Dashboard filters remain future work.
 
 The existing authenticated contract routes remain:
 
@@ -85,7 +91,7 @@ There are no existing records to preserve. The schema change adds employee_compe
 
 ## 8. Reporting and FX
 
-There is no reporting-period selection or aggregate report endpoint. Combined employee and contract filters operate over employee and contract data; the contract drill-down carries its own compensation detail.
+There is no reporting-period selection, implemented dashboard filter, or aggregate report endpoint. The dashboard and employee detail page read live employee and contract data; they do not persist report results.
 
 FX normalization is not implemented. The v0.5 rate-snapshot policy is historical, not a current v0.6 decision. Rate source, timing, fallback, and display rules should be reviewed if normalized display is scheduled.
 
@@ -101,4 +107,4 @@ FX normalization is not implemented. The v0.5 rate-snapshot policy is historical
 
 ## 10. Decision history
 
-The reason and alternatives for this change are recorded in [ADR-0001: Employee-specific compensation](./decisions/ADR-0001-employee-specific-compensation.md). The previous architecture and implementation sequence are preserved in the archive and remain historical, not implementation guidance.
+The reason and alternatives for the compensation ownership change are recorded in [ADR-0001: Employee-specific compensation](./decisions/ADR-0001-employee-specific-compensation.md). Dashboard, drill-down, and total-summary decisions are recorded in [ADR-0002](./decisions/ADR-0002-employee-dashboard-and-totals.md). The previous architecture and implementation sequence are preserved in the archive and remain historical, not implementation guidance.

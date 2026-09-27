@@ -1,6 +1,6 @@
 # Salary Component Relationships Explained
 
-This guide accompanies the current [architecture](./ARCHITECTURE.md) and [ADR-0001](./decisions/ADR-0001-employee-specific-compensation.md).
+This guide accompanies the current [architecture](./ARCHITECTURE.md), [ADR-0001](./decisions/ADR-0001-employee-specific-compensation.md), and [ADR-0002](./decisions/ADR-0002-employee-dashboard-and-totals.md).
 
 ## The three roles
 
@@ -39,7 +39,7 @@ The plan groups the records for filtering; it does not force the amounts to matc
 
 ## Categories and display
 
-Employee-specific rows support every existing SalaryComponent category: earning, allowance, and contribution. Contract detail returns the component breakdown with each component’s amount, name, and category. If a combined compensation total is displayed, earning and allowance count toward it; contribution remains a separate line.
+Employee-specific rows support every existing SalaryComponent category: earning, allowance, and contribution. Contract detail returns the component breakdown with each component's amount, name, and category. The current total compensation helper adds every row, including contribution components, without category filtering. It returns the direct sum in the contract currency; it does not calculate net pay or convert currencies.
 
 ## Why this split
 

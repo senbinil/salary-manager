@@ -17,7 +17,7 @@ The API is available at `http://localhost:3000`. Application endpoints use `/api
 
 The application exposes `GET /api/v1/me`, read endpoints for employees and reference data, and nested employee employment-contract index/show endpoints. Contract responses include employee-specific compensation with the plan tag and component amounts. See [`doc/openapi.yml`](./doc/openapi.yml) for the full route and schema reference.
 
-The employee list endpoint uses server-side pagination. The frontend displays employees in a name-only table with page navigation and a page-size selector; dashboard filters and employee drill-down are later UI slices. The model supports nested component attributes on `EmployeeCompensation`, but no HTTP contract write endpoint currently accepts them. Payroll and reporting endpoints are not implemented.
+The employee list endpoint uses server-side pagination and reports active-contract status, location, start date, total compensation, and the contract currency for that total. The employee show endpoint also returns the current total or `null` when the employee has no active contract. The frontend adds an employee table and a current-contract drill-down. The model supports nested component attributes on `EmployeeCompensation`, but no HTTP contract write endpoint currently accepts them. Payroll and reporting endpoints are not implemented.
 
 ## Checks
 
