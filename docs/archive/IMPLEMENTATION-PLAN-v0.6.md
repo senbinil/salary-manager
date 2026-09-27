@@ -1,14 +1,14 @@
-# Implementation Plan — Salary Manager
+# Implementation Plan — Employee-Specific Compensation
 
-This plan extends the v0.6 implementation plan, preserved at [archive/IMPLEMENTATION-PLAN-v0.6.md](./archive/IMPLEMENTATION-PLAN-v0.6.md), and the v0.5 plan at [archive/IMPLEMENTATION-PLAN-v0.5.md](./archive/IMPLEMENTATION-PLAN-v0.5.md). The current architecture is [ARCHITECTURE.md](./ARCHITECTURE.md); compensation and FX decisions are recorded in [ADR-0001](./decisions/ADR-0001-employee-specific-compensation.md), [ADR-0002](./decisions/ADR-0002-employee-dashboard-and-totals.md), and [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md).
+This plan was current alongside [Architecture v0.6](./ARCHITECTURE-v0.6.md). The previous v0.5 implementation plan is preserved at [IMPLEMENTATION-PLAN-v0.5.md](./IMPLEMENTATION-PLAN-v0.5.md); the rationale and decision trail for v0.6 are in [ADR-0001](../decisions/ADR-0001-employee-specific-compensation.md).
 
 ## Status
 
-Phases 1–14 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. The backend imports monthly exchange-rate snapshots and exposes a separate conversion endpoint. The frontend does not yet display converted totals; that is planned in Phase 15. Payroll, reporting, and dashboard filters remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
+Phases 1–9 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. Payroll, reporting, and dashboard filters remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
 
 ## Delivery approach
 
-Work on a feature branch, in the phases below. Keep each phase reviewable and use Conventional Commits. Use test-first commits within each application: commit the frontend test before its UI feature, and commit the backend spec before its backend feature. The FX backend was split into model, client, conversion service, importer job, and API phases, each delivered separately. Never commit, push, or merge directly to main.
+Work on a feature branch, in the phases below. Keep each phase reviewable and use Conventional Commits. Use test-first commits within each application: commit the frontend test before its UI feature, and commit the backend spec before its backend feature. Never commit, push, or merge directly to main.
 
 ## Phase 1 — Record and publish the architecture decision
 
@@ -16,7 +16,7 @@ Work on a feature branch, in the phases below. Keep each phase reviewable and us
 - Publish the v0.6 architecture and this implementation sequence.
 - Record why shared plan amounts fail for employee-specific pay, why per-employee plans were rejected, and why the plan tag and salary component vocabulary remain reusable.
 - Rewrite the salary-component relationship guide and update the documentation index.
-- Done when the then-current docs described the v0.6 model and earlier versions remained discoverable.
+- Done when all current docs describe the v0.6 model and the archived versions remain discoverable.
 
 ## Phase 2 — Model specs
 
@@ -99,44 +99,7 @@ The dashboard was delivered in focused slices. Its current table shows organizat
 - Add `total_compensation` and `total_compensation_currency` to employee list items. Both are `null` without an active contract; use the active contract currency rather than inferring currency from country.
 - Eager-load active compensation components while listing employees so the page can calculate each summary without a separate aggregate endpoint.
 - Add a currency-formatted Total compensation column before the final Status column. Inactive employees show a dash.
-- Keep the list paginated; do not add a report-period selector, converted totals, payroll calculation, or aggregate report endpoint in this dashboard phase.
-
-## Phase 10 — Monthly FX snapshot model (complete)
-
-- Store one positive rate per calendar month and currency pair, with `period_month` fixed to the first of the month and `rate_date` constrained to an observation within that month.
-- Keep source and provider attribution with each snapshot. Enforce currency-pair uniqueness per month and reject same-currency pairs.
-- Commit model specs before the schema and model feature.
-
-## Phase 11 — Frankfurter client (complete)
-
-- Add a small HTTP adapter for Frankfurter's public v2 rates endpoint, with a configurable base URL and request timeout.
-- Validate HTTP status and response shape at the client boundary; leave monthly selection and persistence to the importer.
-- Commit client specs before the adapter implementation.
-
-## Phase 12 — Snapshot conversion service (complete)
-
-- Convert amounts using only the current month's stored snapshot for the requested source/target pair.
-- Return the original amount with rate 1 for matching currencies; return null conversion data for a missing pair and include currently available target currencies.
-- Keep external provider calls out of the conversion service. Commit service specs before implementation.
-
-## Phase 13 — Monthly snapshot importer (complete)
-
-- For the run date, fetch rates using currencies on contracts active that day as base currencies, from the first of the month through the run date.
-- Store the earliest available observation per pair for that month. Fetch all bases before writing and use a transaction; a unique conflict preserves an existing snapshot.
-- Schedule the production job at 02:00 on the last calendar day of each month. Commit job specs before implementation.
-
-## Phase 14 — Separate conversion API (complete)
-
-- Add authenticated `POST /api/v1/exchange_rates/convert`, independent of employee controllers, and document its request and response in OpenAPI.
-- Accept a finite, non-negative amount and three-letter currency codes. Return available target currencies and either the current-month conversion, a same-currency result, or null conversion fields when no snapshot exists.
-- Commit request specs before adding the controller and route. Do not fetch provider rates during an API request.
-
-## Phase 15 — Employee detail FX display (planned)
-
-- Add conversion display only to active employee details. Keep the native contract-currency total and show the selected converted amount beside it; use the contract currency as the initial target.
-- Request the conversion endpoint for the contract currency to populate available targets, and offer only currencies returned by the API. Show the rate observation date for converted values.
-- If no rate is available or the request fails, retain the native total and explain that conversion is unavailable. Do not request conversion for inactive employees.
-- Follow frontend test-first commits. Cover available currencies, target selection, converted amount and date, missing rates, request failures, and inactive employees.
+- Keep the list paginated and include no report-period selector, cross-currency conversion, payroll calculation, or aggregate report endpoint.
 
 ## Deferred — sample dashboard seed data
 
@@ -148,5 +111,3 @@ The implementation discussion selected a sample dataset of about 100 employees w
 - Run backend bin/ci after API integration.
 - Run frontend lint and tests after each UI slice.
 - Run git diff --check before each phase commit.
-
-The FX phase decisions and implementation state are summarized in [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md). The end-to-end application and FX data flows are described in [WORKFLOW-AND-OVERVIEW.md](./WORKFLOW-AND-OVERVIEW.md).
