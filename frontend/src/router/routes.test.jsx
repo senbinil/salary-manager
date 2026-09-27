@@ -9,11 +9,31 @@ import { routes } from './routes.js'
 // boundary these tests stub.
 vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
 
+const employeeListResponse = {
+  data: {
+    data: [],
+    pagination: {
+      page: 1,
+      limit: 20,
+      count: 0,
+      pages: 0,
+      from: null,
+      to: null,
+      previous: null,
+      next: null,
+    },
+  },
+}
+
 describe('routes', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    // A live session, so the gate lets the signed-in area through.
-    axios.get.mockResolvedValue({ data: { id: 1, email: 'person@example.com' } })
+    // A live session and an empty employee page let the signed-in area render.
+    axios.get.mockImplementation((url) =>
+      url === '/api/v1/employees'
+        ? Promise.resolve(employeeListResponse)
+        : Promise.resolve({ data: { id: 1, email: 'person@example.com' } }),
+    )
   })
 
   it('serves the sign-in page at the root path', async () => {
@@ -134,11 +154,14 @@ describe('routes', () => {
     // The cookie session is real until the sign-out call ends it: the probe
     // answers while it lives, and fails once the visitor is out.
     let signedIn = true
-    axios.get.mockImplementation(() =>
-      signedIn
+    axios.get.mockImplementation((url) => {
+      if (url === '/api/v1/employees') {
+        return Promise.resolve(employeeListResponse)
+      }
+      return signedIn
         ? Promise.resolve({ data: { id: 1, email: 'person@example.com' } })
-        : Promise.reject({ response: { status: 401 } }),
-    )
+        : Promise.reject({ response: { status: 401 } })
+    })
     axios.post.mockImplementation(() => {
       signedIn = false
       return Promise.resolve({ data: { success: 'You have been logged out' } })
