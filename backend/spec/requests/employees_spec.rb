@@ -37,9 +37,13 @@ RSpec.describe "Employees", type: :request do
         expect(response).to have_http_status(:ok)
         expect(json_body["data"]).to contain_exactly(
           { "id" => ada.id, "name" => "Ada", "department_id" => department.id,
-            "designation_id" => designation.id, "user_id" => nil },
+            "department_name" => department.name, "designation_id" => designation.id,
+            "designation_name" => designation.name, "user_id" => nil,
+            "employment_status" => "inactive", "country_name" => nil, "contract_start_date" => nil },
           { "id" => zoe.id, "name" => "Zoe", "department_id" => department.id,
-            "designation_id" => designation.id, "user_id" => nil }
+            "department_name" => department.name, "designation_id" => designation.id,
+            "designation_name" => designation.name, "user_id" => nil,
+            "employment_status" => "inactive", "country_name" => nil, "contract_start_date" => nil }
         )
         expect(json_body["pagination"]).to include(
           "page" => 1,
@@ -108,11 +112,42 @@ RSpec.describe "Employees", type: :request do
         expect(json_body["data"].find { |employee| employee["id"] == zoe.id }["user_id"]).to eq(account.id)
       end
 
-      it "exposes nothing beyond id, name, department_id, designation_id, and user_id" do
+      it "includes display names and current employment status" do
         get "/api/v1/employees"
 
         expect(json_body["data"].first.keys).to contain_exactly(
-          "id", "name", "department_id", "designation_id", "user_id"
+          "id", "name", "department_id", "department_name", "designation_id", "designation_name",
+          "user_id", "employment_status", "country_name", "contract_start_date"
+        )
+      end
+
+      it "reports contract details only while the employee has an active contract" do
+        country = create(:country)
+        active_contract = create(
+          :employment_contract,
+          employee: ada,
+          country: country,
+          start_date: Date.current - 10.days
+        )
+        create(
+          :employment_contract,
+          employee: zoe,
+          start_date: Date.current - 30.days,
+          end_date: Date.current - 1.day
+        )
+
+        get "/api/v1/employees"
+
+        rows = json_body["data"].index_by { |employee| employee["id"] }
+        expect(rows[ada.id]).to include(
+          "employment_status" => "active",
+          "country_name" => country.name,
+          "contract_start_date" => active_contract.start_date.as_json
+        )
+        expect(rows[zoe.id]).to include(
+          "employment_status" => "inactive",
+          "country_name" => nil,
+          "contract_start_date" => nil
         )
       end
     end
@@ -142,8 +177,13 @@ RSpec.describe "Employees", type: :request do
           "id" => employee.id,
           "name" => "Ada",
           "department_id" => employee.department_id,
+          "department_name" => employee.department.name,
           "designation_id" => employee.designation_id,
-          "user_id" => nil
+          "designation_name" => employee.designation.name,
+          "user_id" => nil,
+          "employment_status" => "inactive",
+          "country_name" => nil,
+          "contract_start_date" => nil
         )
       end
 

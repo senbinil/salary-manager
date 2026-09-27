@@ -9,7 +9,7 @@ module Api
       def index
         pagination, employees = pagy(
           :offset,
-          Employee.order(:name, :id),
+          Employee.includes(:department, :designation, active_employment_contracts: :country).order(:name, :id),
           limit: 20,
           client_limit: 100
         )
@@ -32,19 +32,27 @@ module Api
       # A missing record answers with our own 404 body rather than letting
       # RecordNotFound surface as a framework error.
       def find_employee
-        employee = Employee.find_by(id: params[:id])
+        employee = Employee.includes(:department, :designation, active_employment_contracts: :country).find_by(id: params[:id])
         render json: { error: "Employee not found" }, status: :not_found unless employee
         employee
       end
 
       # The client needs these fields only, so the record is never rendered whole.
       def employee_json(employee)
+        active_contract = employee.active_employment_contracts
+          .max_by(&:start_date)
+
         {
           id: employee.id,
           name: employee.name,
           department_id: employee.department_id,
+          department_name: employee.department.name,
           designation_id: employee.designation_id,
-          user_id: employee.user_id
+          designation_name: employee.designation.name,
+          user_id: employee.user_id,
+          employment_status: active_contract.present? ? "active" : "inactive",
+          country_name: active_contract&.country&.name,
+          contract_start_date: active_contract&.start_date
         }
       end
     end

@@ -735,11 +735,13 @@ components:
     Employee:
       type: object
       description: >
-        An employment record. Deliberately not the account - a user is not
-        necessarily an employee - so `user_id` is optional. Department and
-        designation travel as ids, so a client joins them against their own
-        endpoints.
-      required: [id, name, department_id, designation_id]
+        An employment record. Department and designation include both their ids
+        and display names. Employment status is active only when the employee
+        has a contract whose date range includes today; country and contract
+        start date are provided only for that current active contract.
+      required:
+        [id, name, department_id, department_name, designation_id, designation_name,
+          user_id, employment_status, country_name, contract_start_date]
       properties:
         id:
           type: integer
@@ -750,13 +752,32 @@ components:
         department_id:
           type: integer
           description: Department the employee belongs to.
+        department_name:
+          type: string
+          description: Display name of the employee's department.
         designation_id:
           type: integer
           description: Designation (job title) the employee holds.
+        designation_name:
+          type: string
+          description: Display name of the employee's designation.
         user_id:
           type: integer
           nullable: true
-          description: The account behind the employee, when there is one. Usually absent.
+          description: The account behind the employee, when there is one.
+        employment_status:
+          type: string
+          enum: [active, inactive]
+          description: Active when a contract includes today's date; inactive otherwise.
+        country_name:
+          type: string
+          nullable: true
+          description: Country of the current active contract; null when the employee is inactive.
+        contract_start_date:
+          type: string
+          format: date
+          nullable: true
+          description: Start date of the current active contract; null when the employee is inactive.
     EmployeeListResponse:
       type: object
       required: [data, pagination]
