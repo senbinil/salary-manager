@@ -13,9 +13,11 @@ bin/dev
 
 The API is available at `http://localhost:3000`. Application endpoints use `/api/v1`; Rodauth serves authentication routes under the same prefix.
 
-To populate the employee dashboard with 100 sample employees in development, run
-`bin/rails db:seed` from this directory. The seed is safe to rerun and only
-creates sample data in development and test environments.
+To populate the employee dashboard with 100 sample employees and active sample
+contracts in development, run `bin/rails db:seed` from this directory. The seed
+removes all employees, contracts, and compensation before recreating the sample
+data. Accounts and reference data are preserved. It only runs in development
+and test environments.
 
 ## Background jobs
 
