@@ -1,5 +1,6 @@
 import RootLayout from '../layouts/RootLayout.jsx'
 import Home from '../pages/Home.jsx'
+import EmployeeDetails from '../pages/EmployeeDetails.jsx'
 import Login from '../pages/Login.jsx'
 import NotFound from '../pages/NotFound.jsx'
 import { paths } from './paths.js'
@@ -34,6 +35,7 @@ export const routes = [
     HydrateFallback: SessionFallback,
     children: [
       { path: paths.dashboard, Component: Home },
+      { path: paths.employeeDetails, Component: EmployeeDetails },
       { path: '*', Component: NotFound },
     ],
   },

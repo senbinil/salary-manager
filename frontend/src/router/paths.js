@@ -4,4 +4,6 @@
 export const paths = {
   login: '/',
   dashboard: '/dashboard',
+  employeeDetails: '/employees/:employeeId',
+  employeeDetailsFor: (employeeId) => `/employees/${employeeId}`,
 }
