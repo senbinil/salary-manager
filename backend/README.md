@@ -56,9 +56,10 @@ DB_HOST=...                     # container name of the shared Postgres accessor
 DB_USER=backend
 KAMAL_REGISTRY_PASSWORD=...
 BACKEND_DATABASE_PASSWORD=...
+KAMAL_SSH_KEY=~/.ssh/deploy_key   # private key Kamal connects with; ~/.ssh/id_rsa is the fallback
 ```
 
-The file is gitignored and excluded from the image by `.dockerignore`. Real environment variables win over it, so `DEPLOY_HOST=1.2.3.4 bin/kamal deploy` still overrides the file. `.kamal/secrets` only maps the two passwords (`KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD`, `BACKEND_DATABASE_PASSWORD=$BACKEND_DATABASE_PASSWORD`) and takes `RAILS_MASTER_KEY` from `config/master.key`, which is gitignored and excluded from the image.
+The file is gitignored and excluded from the image by `.dockerignore`. Real environment variables win over it, so `DEPLOY_HOST=1.2.3.4 bin/kamal deploy` still overrides the file. `.kamal/secrets` only maps the two passwords (`KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD`, `BACKEND_DATABASE_PASSWORD=$BACKEND_DATABASE_PASSWORD`) and takes `RAILS_MASTER_KEY` from `config/master.key`, which is gitignored and excluded from the image. `KAMAL_SSH_KEY` takes a different route: the `ssh:` block in `config/deploy.yml` passes it to net-ssh as the private key Kamal authenticates with, so it is never injected into a container.
 
 The Postgres service is the accessory that another Kamal service already runs on the same host, so `config/deploy.yml` defines no `accessories:`. `DB_HOST` names that container on the shared `kamal` docker network, and `DB_USER` is a dedicated role owning `backend_production` plus its `_cache`, `_queue` and `_cable` siblings. The three non-primary databases are created on first boot by the entrypoint's `db:prepare`, provided the role has `CREATEDB`; otherwise create them before the first deploy. Production does not use `DATABASE_URL`, because it only overrides the primary configuration.
 
