@@ -402,6 +402,7 @@ describe('Employee contract drill-down', () => {
     expect(
       await screen.findByText('No other currencies are available this month.'),
     ).toBeInTheDocument()
+    expect(screen.queryByText('Converted total')).not.toBeInTheDocument()
     expect(screen.getByText('Total compensation').parentElement).toHaveTextContent(
       '₹1,250.75',
     )
