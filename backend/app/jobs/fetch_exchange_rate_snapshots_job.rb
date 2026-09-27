@@ -13,16 +13,16 @@ class FetchExchangeRateSnapshotsJob < ApplicationJob
       end
     end
 
+    snapshots = first_monthly_rates(rate_rows).map do |attributes|
+      attributes.merge(period_month: period_month)
+    end
+
     ExchangeRateSnapshot.transaction do
-      first_monthly_rates(rate_rows).each do |attributes|
-        ExchangeRateSnapshot.create_or_find_by!(
-          period_month: period_month,
-          base_currency: attributes[:base_currency],
-          quote_currency: attributes[:quote_currency]
-        ) do |snapshot|
-          snapshot.assign_attributes(attributes)
-        end
-      end
+      ExchangeRateSnapshot.insert_all(
+        snapshots,
+        unique_by: :idx_exchange_rate_snapshots_period_pair,
+        record_timestamps: true
+      ) if snapshots.any?
     end
   end
 
