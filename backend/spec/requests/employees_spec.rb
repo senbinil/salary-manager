@@ -31,22 +31,71 @@ RSpec.describe "Employees", type: :request do
         post "/api/v1/login", params: { email: email, password: password }, as: :json
       end
 
-      it "returns each employee with its ids" do
+      it "returns the first page with employee and pagination data" do
         get "/api/v1/employees"
 
         expect(response).to have_http_status(:ok)
-        expect(json_body).to contain_exactly(
+        expect(json_body["data"]).to contain_exactly(
           { "id" => ada.id, "name" => "Ada", "department_id" => department.id,
             "designation_id" => designation.id, "user_id" => nil },
           { "id" => zoe.id, "name" => "Zoe", "department_id" => department.id,
             "designation_id" => designation.id, "user_id" => nil }
+        )
+        expect(json_body["pagination"]).to include(
+          "page" => 1,
+          "limit" => 20,
+          "count" => 2,
+          "pages" => 1,
+          "from" => 1,
+          "to" => 2
+        )
+        expect(json_body["pagination"]).not_to have_key("previous")
+        expect(json_body["pagination"]).not_to have_key("next")
+      end
+
+      it "returns the requested page and navigation metadata" do
+        get "/api/v1/employees", params: { page: 2, limit: 1 }
+
+        expect(response).to have_http_status(:ok)
+        expect(json_body["data"].map { |employee| employee["name"] }).to eq(%w[Zoe])
+        expect(json_body["pagination"]).to include(
+          "page" => 2,
+          "limit" => 1,
+          "count" => 2,
+          "pages" => 2,
+          "from" => 2,
+          "to" => 2,
+          "previous" => 1
+        )
+        expect(json_body["pagination"]).not_to have_key("next")
+      end
+
+      it "caps a client-requested page size at 100" do
+        get "/api/v1/employees", params: { limit: 101 }
+
+        expect(response).to have_http_status(:ok)
+        expect(json_body["pagination"]["limit"]).to eq(100)
+      end
+
+      it "returns an empty data page when the requested page is out of range" do
+        get "/api/v1/employees", params: { page: 3, limit: 1 }
+
+        expect(response).to have_http_status(:ok)
+        expect(json_body["data"]).to eq([])
+        expect(json_body["pagination"]).to include(
+          "page" => 3,
+          "count" => 2,
+          "pages" => 2,
+          "from" => 0,
+          "to" => 0,
+          "previous" => 2
         )
       end
 
       it "orders employees by name" do
         get "/api/v1/employees"
 
-        expect(json_body.map { |employee| employee["name"] }).to eq(%w[Ada Zoe])
+        expect(json_body["data"].map { |employee| employee["name"] }).to eq(%w[Ada Zoe])
       end
 
       # The link is optional, so nil is the common case — check the other one.
@@ -56,13 +105,13 @@ RSpec.describe "Employees", type: :request do
 
         get "/api/v1/employees"
 
-        expect(json_body.find { |employee| employee["id"] == zoe.id }["user_id"]).to eq(account.id)
+        expect(json_body["data"].find { |employee| employee["id"] == zoe.id }["user_id"]).to eq(account.id)
       end
 
       it "exposes nothing beyond id, name, department_id, designation_id, and user_id" do
         get "/api/v1/employees"
 
-        expect(json_body.first.keys).to contain_exactly(
+        expect(json_body["data"].first.keys).to contain_exactly(
           "id", "name", "department_id", "designation_id", "user_id"
         )
       end
