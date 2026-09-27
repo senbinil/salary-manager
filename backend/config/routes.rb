@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       get "me", to: "me#show", as: :me
+      post "exchange_rates/convert", to: "exchange_rates#convert"
 
       resources :compensation_plans, only: :index
       resources :countries, only: :index

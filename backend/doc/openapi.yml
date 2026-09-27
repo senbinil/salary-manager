@@ -26,6 +26,8 @@ tags:
     description: Named tags used to classify employee-specific compensation
   - name: Countries
     description: Employment countries (ISO 3166-1 reference data)
+  - name: ExchangeRates
+    description: Current-month currency conversions from stored exchange-rate snapshots
   - name: Departments
     description: Departments an employee can belong to
   - name: Designations
@@ -294,6 +296,36 @@ paths:
                   $ref: "#/components/schemas/Country"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/exchange_rates/convert:
+    post:
+      tags: [ExchangeRates]
+      operationId: convertExchangeRate
+      summary: Convert an amount
+      description: >
+        Converts an amount using a stored rate for the requested currency pair
+        in the current month. Requires an authenticated session. If no rate is
+        stored for the pair, the response preserves the requested currencies and
+        returns null for the converted amount, rate, and rate date.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExchangeRateConversionRequest"
+      responses:
+        "200":
+          description: Conversion result and quote currencies available for the source currency.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExchangeRateConversion"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
 
   /api/v1/departments:
     get:
@@ -590,6 +622,55 @@ components:
           description: >
             What the account is allowed to do. A client uses it to gate screens,
             but the API enforces it independently.
+    ExchangeRateConversionRequest:
+      type: object
+      required: [amount, from_currency, to_currency]
+      properties:
+        amount:
+          type: string
+          description: Finite, non-negative decimal amount.
+        from_currency:
+          type: string
+          pattern: "^[A-Za-z]{3}$"
+          description: Three-letter source currency code.
+        to_currency:
+          type: string
+          pattern: "^[A-Za-z]{3}$"
+          description: Three-letter target currency code.
+    ExchangeRateConversion:
+      type: object
+      required: [amount, from_currency, to_currency, converted_amount, rate, rate_date, available_target_currencies]
+      properties:
+        amount:
+          type: string
+          description: Original amount as a decimal string.
+        from_currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: Normalized source currency code.
+        to_currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: Normalized target currency code.
+        converted_amount:
+          type: string
+          nullable: true
+          description: Converted amount as a decimal string, or null when the pair rate is unavailable.
+        rate:
+          type: string
+          nullable: true
+          description: Stored exchange rate, or null when unavailable.
+        rate_date:
+          type: string
+          format: date
+          nullable: true
+          description: Observation date for the stored rate, or null when unavailable or currencies match.
+        available_target_currencies:
+          type: array
+          description: Target currencies with a current-month stored rate, including the source currency.
+          items:
+            type: string
+            pattern: "^[A-Z]{3}$"
     CompensationPlan:
       type: object
       description: >
