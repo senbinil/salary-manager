@@ -25,15 +25,26 @@ const employeeListResponse = {
   },
 }
 
+// The dashboard's filter dropdowns load reference data alongside the table.
+const filterEndpoints = [
+  '/api/v1/departments',
+  '/api/v1/designations',
+  '/api/v1/countries',
+]
+
 describe('routes', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     // A live session and an empty employee page let the signed-in area render.
-    axios.get.mockImplementation((url) =>
-      url === '/api/v1/employees'
-        ? Promise.resolve(employeeListResponse)
-        : Promise.resolve({ data: { id: 1, email: 'person@example.com' } }),
-    )
+    axios.get.mockImplementation((url) => {
+      if (url === '/api/v1/employees') {
+        return Promise.resolve(employeeListResponse)
+      }
+      if (filterEndpoints.includes(url)) {
+        return Promise.resolve({ data: [] })
+      }
+      return Promise.resolve({ data: { id: 1, email: 'person@example.com' } })
+    })
   })
 
   it('serves the sign-in page at the root path', async () => {
@@ -157,6 +168,9 @@ describe('routes', () => {
     axios.get.mockImplementation((url) => {
       if (url === '/api/v1/employees') {
         return Promise.resolve(employeeListResponse)
+      }
+      if (filterEndpoints.includes(url)) {
+        return Promise.resolve({ data: [] })
       }
       return signedIn
         ? Promise.resolve({ data: { id: 1, email: 'person@example.com' } })
