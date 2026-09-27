@@ -69,9 +69,9 @@ export default function Home() {
                   <TableCell>Name</TableCell>
                   <TableCell>Department</TableCell>
                   <TableCell>Designation</TableCell>
-                  <TableCell>Status</TableCell>
                   <TableCell>Contract country</TableCell>
                   <TableCell>Contract start date</TableCell>
+                  <TableCell>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -87,18 +87,18 @@ export default function Home() {
                         <TableCell>{employee.department_name}</TableCell>
                         <TableCell>{employee.designation_name}</TableCell>
                         <TableCell>
+                          {isActive ? employee.country_name || '—' : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {isActive ? employee.contract_start_date || '—' : '—'}
+                        </TableCell>
+                        <TableCell>
                           <Chip
                             label={isActive ? 'Active' : 'Inactive'}
                             color={isActive ? 'success' : 'default'}
                             size="small"
                             variant={isActive ? 'filled' : 'outlined'}
                           />
-                        </TableCell>
-                        <TableCell>
-                          {isActive ? employee.country_name || '—' : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {isActive ? employee.contract_start_date || '—' : '—'}
                         </TableCell>
                       </TableRow>
                     )
