@@ -3,6 +3,28 @@ require "rails_helper"
 RSpec.describe EmploymentContract do
   let(:employee) { create(:employee) }
 
+  describe "#total_compensation" do
+    it "sums every component category without losing decimal precision" do
+      contract = create(:employment_contract)
+      compensation = contract.employee_compensation
+      compensation.employee_compensation_components.first.update!(amount: BigDecimal("10000.1250"))
+      create(
+        :employee_compensation_component,
+        employee_compensation: compensation,
+        salary_component: create(:salary_component, category: :allowance),
+        amount: BigDecimal("250.2500")
+      )
+      create(
+        :employee_compensation_component,
+        employee_compensation: compensation,
+        salary_component: create(:salary_component, category: :contribution),
+        amount: BigDecimal("500.1000")
+      )
+
+      expect(contract.total_compensation).to eq(BigDecimal("10750.4750"))
+    end
+  end
+
   it "defaults the currency to the country's" do
     contract = create(:employment_contract, country: create(:country, currency: "INR"), currency: nil)
 

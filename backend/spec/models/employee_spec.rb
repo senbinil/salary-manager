@@ -37,6 +37,65 @@ RSpec.describe Employee do
     expect(create(:employee, user: account).user).to eq(account)
   end
 
+  describe "#total_compensation" do
+    it "sums every component on the current active contract only" do
+      employee = create(:employee)
+      create(
+        :employment_contract,
+        employee: employee,
+        start_date: Date.current - 60,
+        end_date: Date.current - 11
+      )
+      active_contract = create(
+        :employment_contract,
+        employee: employee,
+        start_date: Date.current - 10,
+        end_date: Date.current + 10
+      )
+      create(
+        :employment_contract,
+        employee: employee,
+        start_date: Date.current + 11,
+        end_date: nil
+      )
+
+      components = active_contract.employee_compensation.employee_compensation_components
+      components.first.update!(amount: BigDecimal("10000.1250"))
+      create(
+        :employee_compensation_component,
+        employee_compensation: active_contract.employee_compensation,
+        salary_component: create(:salary_component, category: :allowance),
+        amount: BigDecimal("250.2500")
+      )
+      create(
+        :employee_compensation_component,
+        employee_compensation: active_contract.employee_compensation,
+        salary_component: create(:salary_component, category: :contribution),
+        amount: BigDecimal("500.1000")
+      )
+
+      expect(employee.total_compensation).to eq(BigDecimal("10750.4750"))
+    end
+
+    it "returns nil when the employee has no active contract" do
+      employee = create(:employee)
+      create(
+        :employment_contract,
+        employee: employee,
+        start_date: Date.current - 60,
+        end_date: Date.current - 11
+      )
+      create(
+        :employment_contract,
+        employee: employee,
+        start_date: Date.current + 1,
+        end_date: nil
+      )
+
+      expect(employee.total_compensation).to be_nil
+    end
+  end
+
   describe "employment contracts" do
     it "returns this employee's contracts across their history" do
       employee = create(:employee)

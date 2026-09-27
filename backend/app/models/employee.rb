@@ -9,6 +9,11 @@ class Employee < ApplicationRecord
   has_many :employment_contracts
   has_many :active_employment_contracts, -> { active }, class_name: "EmploymentContract"
 
+  # Returns the current active contract's total in that contract's currency.
+  def total_compensation
+    active_employment_contracts.max_by(&:start_date)&.total_compensation
+  end
+
   validates :name, presence: true
   validates :user, uniqueness: true, allow_nil: true
 end
