@@ -68,7 +68,7 @@ Amounts are not effective-dated within a contract. Editing an employee compensat
 
 ## 6. Dashboard and API behavior
 
-The dashboard roster includes all employees. For a current compensation summary it will use the employee's contract active today, when one exists; employees without an active contract remain in the roster without current-contract compensation. Employee drill-down will retain access to the employee's contract history. The initial UI slice displays employee names from the default API page in a table; table pagination controls, filters, and contract drill-down remain future slices.
+The dashboard roster includes all employees. For a current compensation summary it will use the employee's contract active today, when one exists; employees without an active contract remain in the roster without current-contract compensation. Employee drill-down will retain access to the employee's contract history. The initial UI displays employee names in a table with server-backed pagination controls. Filters and contract drill-down remain future slices.
 
 The existing authenticated contract routes remain:
 

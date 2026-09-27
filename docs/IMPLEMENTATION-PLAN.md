@@ -4,7 +4,7 @@ This plan replaces the v0.5 implementation plan, preserved at [archive/IMPLEMENT
 
 ## Status
 
-Phases 1–5 of the v0.6 model and API sequence are complete. In Phase 6, the employee API pagination and the first frontend slice are complete: the dashboard fetches the default API page and displays employee names in a table. Browser-facing table pagination controls, filters, and contract drill-down remain future slices. A follow-up adds nested component attributes to `EmployeeCompensation` at the model layer only; no HTTP contract write route was added. The phases below record the delivery sequence.
+Phases 1–5 of the v0.6 model and API sequence are complete. In Phase 6, the employee API pagination and the first frontend slices are complete: the dashboard displays employee names in a table, and its page navigation and page-size selector use the API `page` and `limit` parameters. Filters and contract drill-down remain future slices. A follow-up adds nested component attributes to `EmployeeCompensation` at the model layer only; no HTTP contract write route was added. The phases below record the delivery sequence.
 
 ## Delivery approach
 
@@ -52,7 +52,7 @@ Work on a feature branch, in the phases below. Keep each phase reviewable, use C
 
 ## Phase 6 — Employee list and dashboard
 
-The frontend dashboard is being delivered in focused slices. The initial employee table is name-only; pagination controls, filters, and contract drill-down follow separately.
+The frontend dashboard is being delivered in focused slices. The employee table is name-only and paginated; filters and contract drill-down follow separately.
 
 ### Slice 6.1 — Paginate the employee API (complete)
 
@@ -67,7 +67,7 @@ The frontend dashboard is being delivered in focused slices. The initial employe
 - Keep the table name-only for this first slice; do not add dashboard filters or contract drill-down here.
 - Show loading, error, and empty states.
 
-### Slice 6.3 — Table pagination controls (next)
+### Slice 6.3 — Table pagination controls (complete)
 
 - Add page navigation and a page-size selector to the employee table.
 - Send one-based `page` and the selected `limit` to the API; keep the selector within the API maximum of 100.
