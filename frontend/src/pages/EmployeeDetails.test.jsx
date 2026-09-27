@@ -16,7 +16,7 @@ const dateOffset = (days) => {
   return date.toISOString().slice(0, 10)
 }
 
-const makeEmployee = (id, name, employmentStatus) => ({
+const makeEmployee = (id, name, employmentStatus, totalCompensation = null) => ({
   id,
   name,
   department_id: 1,
@@ -27,6 +27,7 @@ const makeEmployee = (id, name, employmentStatus) => ({
   employment_status: employmentStatus,
   country_name: null,
   contract_start_date: null,
+  total_compensation: totalCompensation,
 })
 
 const makeContract = ({
@@ -104,7 +105,7 @@ describe('Employee contract drill-down', () => {
   })
 
   it('opens the active contract from the dashboard and ignores past and future contracts', async () => {
-    const employee = makeEmployee(7, 'Ada Lovelace', 'active')
+    const employee = makeEmployee(7, 'Ada Lovelace', 'active', '1250.7500')
     const contracts = [
       makeContract({
         id: 1,
@@ -148,7 +149,13 @@ describe('Employee contract drill-down', () => {
     expect(screen.getByText('earning')).toBeInTheDocument()
     expect(screen.getByText('India')).toBeInTheDocument()
     expect(screen.getByText('India')).toHaveStyle({ fontWeight: '700' })
-    expect(screen.getByText(/1,250\.75/)).toHaveStyle({ textAlign: 'right' })
+    const formattedAmounts = screen.getAllByText(/1,250\.75/)
+    expect(formattedAmounts).toHaveLength(2)
+    expect(formattedAmounts[0]).toHaveStyle({ textAlign: 'right' })
+    expect(screen.getByText('Total compensation')).toBeInTheDocument()
+    expect(screen.getByText('Total compensation').parentElement).toHaveTextContent(
+      '₹1,250.75',
+    )
     expect(screen.getByText('Active')).toBeInTheDocument()
     expect(screen.queryByText('Old salary')).not.toBeInTheDocument()
     expect(screen.queryByText('Future salary')).not.toBeInTheDocument()
@@ -191,6 +198,7 @@ describe('Employee contract drill-down', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Latest ended salary')).toBeInTheDocument()
     expect(screen.getByText('Inactive')).toBeInTheDocument()
+    expect(screen.queryByText('Total compensation')).not.toBeInTheDocument()
     expect(screen.queryByText('Earlier salary')).not.toBeInTheDocument()
     expect(screen.queryByText('Future salary')).not.toBeInTheDocument()
   })
