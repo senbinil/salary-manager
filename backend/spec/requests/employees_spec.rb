@@ -183,8 +183,37 @@ RSpec.describe "Employees", type: :request do
           "user_id" => nil,
           "employment_status" => "inactive",
           "country_name" => nil,
-          "contract_start_date" => nil
+          "contract_start_date" => nil,
+          "total_compensation" => nil
         )
+      end
+
+      it "includes the active contract's total compensation" do
+        contract = create(
+          :employment_contract,
+          employee: employee,
+          start_date: Date.current - 1.day,
+          end_date: Date.current + 1.day
+        )
+        compensation = contract.employee_compensation
+        compensation.employee_compensation_components.first.update!(amount: BigDecimal("10000.1250"))
+        create(
+          :employee_compensation_component,
+          employee_compensation: compensation,
+          salary_component: create(:salary_component, category: :allowance),
+          amount: BigDecimal("250.2500")
+        )
+        create(
+          :employee_compensation_component,
+          employee_compensation: compensation,
+          salary_component: create(:salary_component, category: :contribution),
+          amount: BigDecimal("500.1000")
+        )
+
+        get "/api/v1/employees/#{employee.id}"
+
+        expect(response).to have_http_status(:ok)
+        expect(json_body["total_compensation"]).to eq(BigDecimal("10750.4750").as_json)
       end
 
       it "answers 404 for an employee that does not exist" do
