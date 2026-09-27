@@ -85,9 +85,9 @@ describe('Home employee dashboard', () => {
       'Name',
       'Department',
       'Designation',
-      'Status',
       'Contract country',
       'Contract start date',
+      'Status',
     ])
 
     const activeRow = screen.getByRole('row', { name: /Ada Lovelace/ })
