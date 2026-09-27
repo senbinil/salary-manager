@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_26_131830) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_27_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -108,6 +108,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_26_131830) do
     t.index ["employee_id"], name: "index_employment_contracts_on_employee_id"
     t.index ["employee_id"], name: "index_employment_contracts_on_open_ended_employee", unique: true, where: "(end_date IS NULL)"
     t.check_constraint "end_date IS NULL OR end_date > start_date", name: "employment_contracts_end_after_start"
+  end
+
+  create_table "exchange_rate_snapshots", force: :cascade do |t|
+    t.string "base_currency", limit: 3, null: false
+    t.datetime "created_at", null: false
+    t.date "period_month", null: false
+    t.jsonb "provider_attribution", default: [], null: false
+    t.string "quote_currency", limit: 3, null: false
+    t.decimal "rate", precision: 24, scale: 12, null: false
+    t.date "rate_date", null: false
+    t.string "source", null: false
+    t.datetime "updated_at", null: false
+    t.index ["period_month"], name: "index_exchange_rate_snapshots_on_period_month"
+    t.index ["period_month", "base_currency", "quote_currency"], name: "idx_exchange_rate_snapshots_period_pair", unique: true
+    t.check_constraint "base_currency <> quote_currency", name: "exchange_rate_snapshots_distinct_currencies"
+    t.check_constraint "period_month = (date_trunc('month'::text, period_month::timestamp with time zone))::date", name: "exchange_rate_snapshots_period_month_start"
+    t.check_constraint "rate > 0::numeric", name: "exchange_rate_snapshots_positive_rate"
+    t.check_constraint "rate_date >= period_month AND rate_date < (period_month + '1 mon'::interval)", name: "exchange_rate_snapshots_rate_in_period"
   end
 
   create_table "salary_components", force: :cascade do |t|
