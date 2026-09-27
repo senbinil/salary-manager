@@ -13,7 +13,7 @@ RSpec.describe ExchangeRateSnapshot do
     )
 
     expect(snapshot).not_to be_valid
-    expect(snapshot.errors.keys).to include(
+    expect(snapshot.errors.attribute_names).to include(
       :period_month, :base_currency, :quote_currency, :rate, :rate_date, :source
     )
   end
