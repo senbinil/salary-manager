@@ -146,7 +146,7 @@ describe('Employee contract drill-down', () => {
     expect(screen.getByText(dateOffset(0))).toBeInTheDocument()
     expect(screen.getByText('earning')).toBeInTheDocument()
     expect(screen.getByText('India')).toBeInTheDocument()
-    expect(screen.getByText(/1,250\.75/)).toBeInTheDocument()
+    expect(screen.getByText(/1,250\.75/)).toHaveStyle({ textAlign: 'right' })
     expect(screen.getByText('Active')).toBeInTheDocument()
     expect(screen.queryByText('Old salary')).not.toBeInTheDocument()
     expect(screen.queryByText('Future salary')).not.toBeInTheDocument()
