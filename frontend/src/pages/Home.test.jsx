@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithRouter } from '../test/render.jsx'
@@ -11,17 +11,37 @@ vi.mock('axios', () => ({
 
 const homeRoutes = [{ path: '/', Component: Home }]
 
+const employee = (id, name, details = {}) => ({
+  id,
+  name,
+  department_name: 'Engineering',
+  designation_name: 'Software Engineer',
+  employment_status: 'inactive',
+  country_name: null,
+  contract_start_date: null,
+  ...details,
+})
+
 const employees = [
-  { id: 1, name: 'Ada Lovelace' },
-  ...Array.from({ length: 19 }, (_, index) => ({
-    id: index + 2,
-    name: `Employee ${index + 2}`,
-  })),
-  { id: 21, name: 'Grace Hopper' },
-  ...Array.from({ length: 5 }, (_, index) => ({
-    id: index + 22,
-    name: `Employee ${index + 22}`,
-  })),
+  employee(1, 'Ada Lovelace', {
+    designation_name: 'Principal Engineer',
+    employment_status: 'active',
+    country_name: 'United States',
+    contract_start_date: '2022-07-01',
+  }),
+  ...Array.from({ length: 19 }, (_, index) =>
+    employee(index + 2, `Employee ${index + 2}`),
+  ),
+  employee(21, 'Grace Hopper', {
+    department_name: 'Research',
+    designation_name: 'Computer Scientist',
+    employment_status: 'active',
+    country_name: 'United States',
+    contract_start_date: '2020-05-01',
+  }),
+  ...Array.from({ length: 5 }, (_, index) =>
+    employee(index + 22, `Employee ${index + 22}`),
+  ),
 ]
 
 beforeEach(() => {
@@ -53,14 +73,33 @@ beforeEach(() => {
 })
 
 describe('Home employee dashboard', () => {
-  it('shows employee names and requests the default first page', async () => {
+  it('shows employee details and requests the default first page', async () => {
     renderWithRouter(homeRoutes)
 
     const table = await screen.findByRole('table', { name: 'Employee list' })
 
     expect(screen.getByRole('heading', { level: 1, name: 'Employees' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument()
-    expect(screen.getByRole('row', { name: /Ada Lovelace/ })).toBeInTheDocument()
+    expect(
+      within(table).getAllByRole('columnheader').map((header) => header.textContent),
+    ).toEqual([
+      'Name',
+      'Department',
+      'Designation',
+      'Status',
+      'Contract country',
+      'Contract start date',
+    ])
+
+    const activeRow = screen.getByRole('row', { name: /Ada Lovelace/ })
+    expect(within(activeRow).getByText('Engineering')).toBeInTheDocument()
+    expect(within(activeRow).getByText('Principal Engineer')).toBeInTheDocument()
+    expect(within(activeRow).getByText('Active')).toBeInTheDocument()
+    expect(within(activeRow).getByText('United States')).toBeInTheDocument()
+    expect(within(activeRow).getByText('2022-07-01')).toBeInTheDocument()
+
+    const inactiveRow = screen.getByRole('row', { name: /^Employee 2 / })
+    expect(within(inactiveRow).getByText('Inactive')).toBeInTheDocument()
+    expect(within(inactiveRow).getAllByText('—')).toHaveLength(2)
     expect(table).toBeInTheDocument()
     expect(axios.get).toHaveBeenCalledWith('/api/v1/employees', {
       params: { page: 1, limit: 20 },
