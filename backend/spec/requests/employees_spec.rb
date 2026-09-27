@@ -182,6 +182,54 @@ RSpec.describe "Employees", type: :request do
           "total_compensation_currency" => "USD"
         )
       end
+
+      describe "filtering" do
+        let!(:research) { create(:department, name: "Research") }
+        let!(:grace) do
+          create(:employee, name: "Grace", department: research, designation: designation)
+        end
+
+        it "filters the page by the supported parameters" do
+          get "/api/v1/employees", params: {
+            filter: { name_cont: "gra", department_id: research.id, designation_id: designation.id }
+          }
+
+          expect(response).to have_http_status(:ok)
+          expect(json_body["data"].map { |employee| employee["name"] }).to eq([ "Grace" ])
+          expect(json_body["pagination"]["count"]).to eq(1)
+        end
+
+        it "filters by department id" do
+          get "/api/v1/employees", params: { filter: { department_id: research.id } }
+
+          expect(response).to have_http_status(:ok)
+          expect(json_body["data"].map { |employee| employee["name"] }).to eq([ "Grace" ])
+        end
+
+        # The permitted set is an allow list, so a filter cannot reach past the
+        # query object into pagination or the rest of the params.
+        it "ignores filter keys outside the supported set" do
+          get "/api/v1/employees", params: { filter: { limit: 1, unknown: "Research" } }
+
+          expect(response).to have_http_status(:ok)
+          expect(json_body["data"].map { |employee| employee["name"] }).to eq(%w[Ada Grace Zoe])
+          expect(json_body["pagination"]["limit"]).to eq(20)
+        end
+
+        it "answers 400 when the filter is not an object" do
+          get "/api/v1/employees", params: { filter: "name_cont" }
+
+          expect(response).to have_http_status(:bad_request)
+          expect(json_body["error"]).to eq("filter must be an object")
+        end
+
+        it "answers 400 with the message for an invalid filter value" do
+          get "/api/v1/employees", params: { filter: { department_id: "engineering" } }
+
+          expect(response).to have_http_status(:bad_request)
+          expect(json_body["error"]).to eq("department_id must be an integer")
+        end
+      end
     end
   end
 
