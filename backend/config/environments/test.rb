@@ -22,6 +22,11 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.cache_store = :null_store
 
+  # Point Solid Queue at its own database so the queue-integration spec can
+  # exercise the real adapter. The suite itself keeps the default :test adapter,
+  # so enqueuing elsewhere stays in memory and out of the database.
+  config.solid_queue.connects_to = { database: { writing: :queue } }
+
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable
 

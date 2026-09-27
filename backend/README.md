@@ -13,6 +13,18 @@ bin/dev
 
 The API is available at `http://localhost:3000`. Application endpoints use `/api/v1`; Rodauth serves authentication routes under the same prefix.
 
+## Background jobs
+
+Active Job runs on Solid Queue, which keeps a database per environment (`backend_development_queue`, `backend_test_queue`, `backend_production_queue`). `bin/setup` and `bin/rails db:prepare` create them along with the application databases.
+
+Development starts the Solid Queue supervisor inside Puma, so enqueued jobs are processed without a separate process:
+
+```sh
+bin/rails runner 'FetchExchangeRateSnapshotsJob.perform_later'
+```
+
+`bin/jobs` runs the supervisor on its own and is what a dedicated worker machine would use. The monthly exchange-rate import is scheduled in `config/recurring.yml` for production only, so run it by hand locally as above.
+
 ## Current API
 
 The application exposes `GET /api/v1/me`, read endpoints for employees and reference data, and nested employee employment-contract index/show endpoints. Contract responses include employee-specific compensation with the plan tag and component amounts. See [`doc/openapi.yml`](./doc/openapi.yml) for the full route and schema reference.

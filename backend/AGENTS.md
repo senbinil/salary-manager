@@ -35,8 +35,16 @@ Run `bin/ci` before considering work complete — it runs rubocop, bundler-audit
 - Ruby style follows `rubocop-rails-omakase`; keep `bin/rubocop` clean.
 - Do not commit secrets; use `config/credentials.yml.enc` / `RAILS_MASTER_KEY` (Kamal injects it from `.kamal/secrets`).
 - Tests are **RSpec** specs in `spec/` (the Minitest `test/` scaffold was removed). `rails generate` emits specs, and FactoryBot methods are available in specs via `rails_helper`.
-- DB names: `backend_development`, `backend_test` (`config/database.yml`).
+- DB names: `backend_development`, `backend_test` (`config/database.yml`), each with its own `queue` database for Solid Queue.
 - Generated scaffolding (job queue, cache, cable, deploy) is intact and expected to stay.
+
+## Jobs and Solid Queue
+
+- Solid Queue keeps a database per environment: `backend_development_queue`, `backend_test_queue`, `backend_production_queue`. Schemas come from `db/queue_schema.rb`, and each `queue` entry sets `migrations_paths: db/queue_migrate` so application migrations never run against it. `bin/rails db:prepare` creates them; CI's `db:test:prepare` creates the test one. Each `queue` entry also sets `url: ENV["DATABASE_URL"]`, because that variable only overrides the primary config — without it, CI (which passes `DATABASE_URL`) keeps the credentials-file user for the queue database and aborts with `DatabaseConnectionError`.
+- `db/queue_schema.rb` is a schema dump, not a migration: it is byte-identical to solid_queue's install template and is loaded whenever a queue database is created, so a fresh install needs no migration. Schema changes arrive only with a newer gem version — run `bin/rails solid_queue:update` (the migration lands in `db/queue_migrate`, matching `migrations_paths`) and then `bin/rails db:migrate`. The copied migration skips what already exists and is meant to be adapted, for example `algorithm: :concurrently` for the jobs index on PostgreSQL. Bumping the gem does not update the dump by itself.
+- Development uses the Solid Queue adapter and starts the supervisor inside Puma (`plugin :solid_queue` in `config/puma.rb`), so enqueued jobs are processed with no `bin/jobs` process. Production opts in through `SOLID_QUEUE_IN_PUMA`; `bin/jobs` stays the alternative for a dedicated worker machine (the commented-out `job:` role in `config/deploy.yml`). The supervisor exits if the queue database is unreachable at boot, and the plugin then stops Puma with it.
+- `config/recurring.yml` schedules `FetchExchangeRateSnapshotsJob` in production only. Locally, enqueue it by hand — `bin/rails runner 'FetchExchangeRateSnapshotsJob.perform_later'` — and the running dev server's worker picks it up.
+- `spec/jobs/fetch_exchange_rate_snapshots_job_queue_spec.rb` is the only spec that exercises the queue: it stays transactional (the worker's own connection sees none of the example's rows, so the job finds no contracts and writes nothing), swaps the adapter to `:solid_queue` in an `around` hook, runs `SolidQueue::Worker` with `mode = :inline` so its loop ends once no ready executions are left, and removes the queue rows in `after`. Keep enqueue-based coverage there instead of taking the suite off the default `:test` adapter.
 
 ## Current State & Pitfalls
 
