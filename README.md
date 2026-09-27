@@ -7,7 +7,7 @@ Salary Manager is a monorepo for managing employee contracts and employee-specif
 - The backend provides cookie-session authentication and read endpoints for employees, reference data, and nested employment contracts.
 - Each employment contract has one `EmployeeCompensation`. Compensation plans are reusable filter tags; component amounts belong to that contract's compensation and use the contract currency.
 - `EmployeeCompensation` supports nested component assignment at the model layer. There are no HTTP contract create/update endpoints.
-- The frontend provides sign-in, a session-gated shell, and a name-only employee table with server-backed pagination. Dashboard filters, employee drill-down, and reporting UI remain future work.
+- The frontend provides sign-in, a session-gated shell, a paginated employee table with active-contract details and total compensation, and an employee contract drill-down. Dashboard filters and reporting UI remain future work.
 - There is no payroll run, aggregate report endpoint, reporting-month selector, or currency-normalization feature.
 
 ## API documentation
@@ -56,8 +56,9 @@ GitHub Actions runs checks when changes touch each app:
 ## Documentation
 
 - [Architecture v0.6](./docs/ARCHITECTURE.md) — current model and behavior.
-- [Implementation plan](./docs/IMPLEMENTATION-PLAN.md) — completed model/API work and the dashboard UI slices.
+- [Implementation plan](./docs/IMPLEMENTATION-PLAN.md) — completed model/API work, dashboard slices, and employee drill-down.
 - [Salary component relationships](./docs/SALARY-COMPONENT-RELATIONSHIPS.md) — plan tags, shared component definitions, and employee-specific amounts.
 - [ADR-0001](./docs/decisions/ADR-0001-employee-specific-compensation.md) — rationale and alternatives for the compensation model.
+- [ADR-0002](./docs/decisions/ADR-0002-employee-dashboard-and-totals.md) — dashboard, drill-down, and total compensation decisions.
 - [Documentation index and version history](./docs/README.md).
 - [Backend guidance](./backend/AGENTS.md) and [frontend guidance](./frontend/AGENTS.md).
