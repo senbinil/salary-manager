@@ -470,7 +470,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Employee"
+                $ref: "#/components/schemas/EmployeeDetails"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -778,6 +778,19 @@ components:
           format: date
           nullable: true
           description: Start date of the current active contract; null when the employee is inactive.
+    EmployeeDetails:
+      allOf:
+        - $ref: "#/components/schemas/Employee"
+        - type: object
+          required: [total_compensation]
+          properties:
+            total_compensation:
+              type: string
+              nullable: true
+              description: >
+                Sum of every compensation component on the current active
+                contract, represented as a decimal string in the contract's
+                currency; null when the employee has no active contract.
     EmployeeListResponse:
       type: object
       required: [data, pagination]

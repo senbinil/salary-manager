@@ -24,7 +24,9 @@ module Api
         employee = find_employee
         return unless employee
 
-        render json: employee_json(employee)
+        render json: employee_json(employee).merge(
+          total_compensation: employee.total_compensation
+        )
       end
 
       private
