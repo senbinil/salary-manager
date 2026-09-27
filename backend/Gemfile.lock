@@ -393,6 +393,7 @@ DEPENDENCIES
   brakeman
   bundler-audit
   debug
+  dotenv
   factory_bot_rails (~> 6.4)
   image_processing (~> 1.2)
   json (~> 2.0)

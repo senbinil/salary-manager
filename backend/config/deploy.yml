@@ -1,16 +1,16 @@
-# Name of your application. Used to uniquely configure containers.
+# Name of the application. Used to uniquely configure containers.
 service: backend
 
 # Name of the container image (use your-user/app-name on external registries).
-image: backend
+image: <%= ENV.fetch("DOCKERHUB_USER") %>/salary-manager-backend
 
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
+    - <%= ENV.fetch("DEPLOY_HOST") %>
   # job:
   #   hosts:
-  #     - 192.168.0.1
+  #     - <%= ENV.fetch("DEPLOY_HOST") %>
   #   cmd: bin/jobs
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
@@ -20,44 +20,54 @@ servers:
 #
 # Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
 #
-# proxy:
-#   ssl: true
-#   host: app.example.com
+proxy:
+  ssl: true
+  host: <%= ENV.fetch("API_HOST") %>
+  # app_port is not set because it defaults to 80, which is where Thruster listens.
+  healthcheck:
+    path: /up
 
-# Where you keep your container images.
+# Where you keep your container images. Docker Hub is the default, so `server` is
+# unset and `image` above carries the `<user>/<repo>` name. Kamal 2 has no local
+# registry, so the generated `localhost:5555` value would fail the first deploy.
 registry:
-  # Alternatives: hub.docker.com / registry.digitalocean.com / ghcr.io / ...
-  server: localhost:5555
-
-  # Needed for authenticated registries.
-  # username: your-user
+  username: <%= ENV.fetch("DOCKERHUB_USER") %>
 
   # Always use an access token rather than real password when possible.
-  # password:
-  #   - KAMAL_REGISTRY_PASSWORD
+  # The value comes from backend/.env.production via .kamal/secrets.
+  password:
+    - KAMAL_REGISTRY_PASSWORD
 
 # Inject ENV variables into containers (secrets come from .kamal/secrets).
 env:
   secret:
     - RAILS_MASTER_KEY
+    # Password of the `backend` role on the shared Postgres accessory.
+    - BACKEND_DATABASE_PASSWORD
   clear:
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
     SOLID_QUEUE_IN_PUMA: true
 
-    # Origins allowed to call the API cross-origin, comma-separated. Set this to
-    # the deployed frontend origin(s); a `*` value crashes the app at boot.
-    # CORS_ORIGINS: https://app.example.com
+    # Postgres for this service is the accessory another Kamal service already runs
+    # on this host, so no `accessories:` block is defined below. Both apps' containers
+    # join the shared `kamal` docker network, where the accessory's container name
+    # resolves. Never use 127.0.0.1 here - inside the container that is the container
+    # itself, not the host.
+    DB_HOST: <%= ENV.fetch("DB_HOST") %>
+    DB_USER: <%= ENV.fetch("DB_USER") %>
+
+    # Origins allowed to call the API cross-origin, comma-separated. Full URLs only:
+    # a bare host compiles to a scheme-agnostic regex that rejects every port, and a
+    # `*` value crashes the app at boot. Set this to the deployed frontend origin even
+    # though both live under one domain - a subdomain is a different origin.
+    CORS_ORIGINS: "<%= ENV.fetch("FRONTEND_ORIGIN") %>"
 
     # Set number of processes dedicated to Solid Queue (default: 1)
     # JOB_CONCURRENCY: 3
 
     # Set number of cores available to the application on each server (default: 1).
     # WEB_CONCURRENCY: 2
-
-    # Match this to any external database server to configure Active Record correctly
-    # Use backend-db for a db accessory server on same machine via local kamal docker network.
-    # DB_HOST: 192.168.0.2
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
@@ -80,6 +90,14 @@ volumes:
 builder:
   arch: amd64
 
+  # Build with the daemon's own BuildKit instead of the default `docker-container`
+  # driver. On Docker Desktop for WSL2 the generated builder container cannot start
+  # ("invalid mount config for type bind: bind source path does not exist:
+  # /run/desktop/mnt/host/wsl/..."), so Kamal fails while booting its buildx builder,
+  # before the first build instruction runs. The docker driver builds the same
+  # context without a separate builder container.
+  driver: docker
+
   # # Build image via remote server (useful for faster amd64 builds on arm64 computers)
   # remote: ssh://docker@docker-builder-server
   #
@@ -94,26 +112,17 @@ builder:
 # ssh:
 #   user: app
 
-# Use accessory services (secrets come from .kamal/secrets).
-# accessories:
-#   db:
-#     image: mysql:8.0
-#     host: 192.168.0.2
-#     # Change to 3306 to expose port to the world instead of just local network.
-#     port: "127.0.0.1:3306:3306"
-#     env:
-#       clear:
-#         MYSQL_ROOT_HOST: '%'
-#       secret:
-#         - MYSQL_ROOT_PASSWORD
-#     files:
-#       - config/mysql/production.cnf:/etc/mysql/my.cnf
-#       - db/production.sql:/docker-entrypoint-initdb.d/setup.sql
-#     directories:
-#       - data:/var/lib/mysql
-#   redis:
-#     image: valkey/valkey:8
-#     host: 192.168.0.2
-#     port: 6379
-#     directories:
-#       - data:/data
+# No accessories are defined on purpose. Postgres already runs as an accessory of
+# another Kamal service on this host, and DB_HOST above points at it; declaring a
+# `db` accessory here would start a second Postgres and a conflicting volume.
+#
+# The databases this app uses (backend_production plus its _cache, _queue and _cable
+# siblings) are created by the entrypoint's `db:prepare` on first boot, which needs
+# the `backend` role to own CREATEDB. Without that, create the four databases by
+# hand before the first deploy.
+# SSH access. KAMAL_SSH_KEY (set in backend/.env.production) selects the private
+# key; net-ssh expands `~`. Without it Kamal falls back to ~/.ssh/id_rsa.
+ssh:
+  user: root
+  keys:
+    - <%= ENV["KAMAL_SSH_KEY"] || "~/.ssh/id_rsa" %>

@@ -40,3 +40,35 @@ bin/ci
 ```
 
 `bin/ci` runs setup, RuboCop, security audits, RSpec, and seed verification. See [`AGENTS.md`](./AGENTS.md) for backend-specific conventions and operational notes.
+
+## Deployment
+
+Production runs as a Docker container managed by [Kamal](https://kamal-deploy.org) (`config/deploy.yml`), with Thruster as the in-container server and Kamal's proxy terminating TLS for the API host. The image is pushed to Docker Hub.
+
+Kamal 2 has no `.env` file support of its own - its dotenv handling covers only `.kamal/secrets-common` and `.kamal/secrets`. So `bin/kamal` loads `backend/.env` and `backend/.env.production` (with dotenv) before starting Kamal, and `config/deploy.yml` interpolates its host values from the result. That makes `.env.production` the only file to maintain per deployment:
+
+```sh
+DOCKERHUB_USER=...              # Docker Hub user; also the image namespace
+DEPLOY_HOST=...                 # the VPS
+API_HOST=api.example.com        # public API host; the proxy requests a TLS certificate for it
+FRONTEND_ORIGIN=https://app.example.com
+DB_HOST=...                     # container name of the shared Postgres accessory
+DB_USER=backend
+KAMAL_REGISTRY_PASSWORD=...
+BACKEND_DATABASE_PASSWORD=...
+KAMAL_SSH_KEY=~/.ssh/deploy_key   # private key Kamal connects with; ~/.ssh/id_rsa is the fallback
+```
+
+The file is gitignored and excluded from the image by `.dockerignore`. Real environment variables win over it, so `DEPLOY_HOST=1.2.3.4 bin/kamal deploy` still overrides the file. `.kamal/secrets` only maps the two passwords (`KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD`, `BACKEND_DATABASE_PASSWORD=$BACKEND_DATABASE_PASSWORD`) and takes `RAILS_MASTER_KEY` from `config/master.key`, which is gitignored and excluded from the image. `KAMAL_SSH_KEY` takes a different route: the `ssh:` block in `config/deploy.yml` passes it to net-ssh as the private key Kamal authenticates with, so it is never injected into a container.
+
+The Postgres service is the accessory that another Kamal service already runs on the same host, so `config/deploy.yml` defines no `accessories:`. `DB_HOST` names that container on the shared `kamal` docker network, and `DB_USER` is a dedicated role owning `backend_production` plus its `_cache`, `_queue` and `_cable` siblings. The three non-primary databases are created on first boot by the entrypoint's `db:prepare`, provided the role has `CREATEDB`; otherwise create them before the first deploy. Production does not use `DATABASE_URL`, because it only overrides the primary configuration.
+
+```sh
+bin/kamal setup         # first deploy: proxy, TLS certificate, image, container
+bin/kamal app logs -f   # expect "Started Supervisor" from SOLID_QUEUE_IN_PUMA
+bin/kamal console       # create the first account; production seeds nothing
+```
+
+`bin/kamal deploy` ships later releases, and the entrypoint migrates the database on boot. `bin/kamal app logs`, `bin/kamal console` and `bin/kamal dbc` are the day-to-day commands.
+
+`CORS_ORIGINS` is fed from `FRONTEND_ORIGIN` in `.env.production` and must be a full URL. A sibling subdomain is still a different origin, so the browser needs that policy even when both apps share a domain.
