@@ -4,7 +4,7 @@ This plan replaces the v0.5 implementation plan, preserved at [archive/IMPLEMENT
 
 ## Status
 
-Phases 1–5 of the v0.6 model and API sequence are complete. Phase 6 has started with server-side pagination for the employee list; the table and displayed employee fields remain for review before the UI slice. A follow-up adds nested component attributes to `EmployeeCompensation` at the model layer only; no HTTP contract write route was added. The phases below record the delivery sequence.
+Phases 1–5 of the v0.6 model and API sequence are complete. In Phase 6, the employee API pagination and the first frontend slices are complete: the dashboard displays employee names in a table, and its page navigation and page-size selector use the API `page` and `limit` parameters. Filters and contract drill-down remain future slices. A follow-up adds nested component attributes to `EmployeeCompensation` at the model layer only; no HTTP contract write route was added. The phases below record the delivery sequence.
 
 ## Delivery approach
 
@@ -52,24 +52,30 @@ Work on a feature branch, in the phases below. Keep each phase reviewable, use C
 
 ## Phase 6 — Employee list and dashboard
 
-The frontend currently has only a placeholder Home page. This phase is split into focused slices so the employee row can be reviewed before building out dashboard details.
+The frontend dashboard is being delivered in focused slices. The employee table is name-only and paginated; filters and contract drill-down follow separately.
 
-### Slice 6.1 — Paginate the employee API
+### Slice 6.1 — Paginate the employee API (complete)
 
 - Add Pagy offset pagination to `GET /api/v1/employees`, retaining name ordering with id as a stable tie-breaker.
 - Accept one-based `page` and `limit` query parameters. Default to 20 employees per page and cap client-requested pages at 100.
-- Return the selected employee records under `data` and Pagy metadata under `pagination`; leave the employee `show` endpoint unchanged.
-- Update request specs and OpenAPI before the table is implemented.
+- Return selected employee records under `data` and Pagy metadata under `pagination`; keep the employee `show` endpoint unchanged.
+- Request specs and OpenAPI document the paginated list response.
 
-### Slice 6.2 — Employee table
+### Slice 6.2 — Basic employee table (complete)
 
-- Consume the paginated employee endpoint in the frontend and render a table with pagination.
-- Review which employee fields appear in each row before adding them to the table.
-- Decide later dashboard filters and contract drill-down details; add no report endpoint as part of this phase.
+- Fetch the default page from the paginated employee endpoint and display employee names in a table.
+- Keep the table name-only for this first slice; do not add dashboard filters or contract drill-down here.
+- Show loading, error, and empty states.
+
+### Slice 6.3 — Table pagination controls (complete)
+
+- Add page navigation and a page-size selector to the employee table.
+- Send one-based `page` and the selected `limit` to the API; keep the selector within the API maximum of 100.
+- Defer combined employee/contract filters and contract drill-down to a later slice. Add no report endpoint.
 
 ## Verification
 
 - Run targeted model specs after Phase 3 and request specs after Phase 5.
 - Run backend bin/ci after API integration.
-- Run frontend lint and tests to confirm this backend-focused change does not break the current frontend.
+- Run frontend lint and tests after each UI slice.
 - Run git diff --check before each phase commit.

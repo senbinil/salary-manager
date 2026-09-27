@@ -30,4 +30,4 @@ The planned dashboard will include all employees and use a contract active today
 
 ## Implementation state
 
-The backend has employee and nested employment-contract read routes. `EmployeeCompensation` supports model-level nested component assignment, but no HTTP contract write endpoint accepts it. The frontend currently has a placeholder Home page rather than an employee dashboard; dashboard UI work remains a later slice. See the implementation plan for phase status.
+The backend has employee and nested employment-contract read routes. `EmployeeCompensation` supports model-level nested component assignment, but no HTTP contract write endpoint accepts it. The frontend displays employee names in a table with server-backed pagination. Dashboard filters and contract drill-down remain later slices. See the implementation plan for phase status.
