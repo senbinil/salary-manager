@@ -19,6 +19,8 @@ const employee = (id, name, details = {}) => ({
   employment_status: 'inactive',
   country_name: null,
   contract_start_date: null,
+  total_compensation: null,
+  total_compensation_currency: null,
   ...details,
 })
 
@@ -28,6 +30,8 @@ const employees = [
     employment_status: 'active',
     country_name: 'United States',
     contract_start_date: '2022-07-01',
+    total_compensation: '10250.3750',
+    total_compensation_currency: 'USD',
   }),
   ...Array.from({ length: 19 }, (_, index) =>
     employee(index + 2, `Employee ${index + 2}`),
@@ -87,6 +91,7 @@ describe('Home employee dashboard', () => {
       'Designation',
       'Contract country',
       'Contract start date',
+      'Total compensation',
       'Status',
     ])
 
@@ -99,10 +104,18 @@ describe('Home employee dashboard', () => {
     expect(within(activeRow).getByText('Active')).toBeInTheDocument()
     expect(within(activeRow).getByText('United States')).toBeInTheDocument()
     expect(within(activeRow).getByText('2022-07-01')).toBeInTheDocument()
+    expect(
+      within(activeRow).getByText(
+        new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency: 'USD',
+        }).format(Number('10250.3750')),
+      ),
+    ).toBeInTheDocument()
 
     const inactiveRow = screen.getByRole('row', { name: /^Employee 2 / })
     expect(within(inactiveRow).getByText('Inactive')).toBeInTheDocument()
-    expect(within(inactiveRow).getAllByText('—')).toHaveLength(2)
+    expect(within(inactiveRow).getAllByText('—')).toHaveLength(3)
     expect(table).toBeInTheDocument()
     expect(axios.get).toHaveBeenCalledWith('/api/v1/employees', {
       params: { page: 1, limit: 20 },

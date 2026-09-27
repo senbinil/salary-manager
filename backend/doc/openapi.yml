@@ -791,6 +791,23 @@ components:
                 Sum of every compensation component on the current active
                 contract, represented as a decimal string in the contract's
                 currency; null when the employee has no active contract.
+    EmployeeListItem:
+      allOf:
+        - $ref: "#/components/schemas/Employee"
+        - type: object
+          required: [total_compensation, total_compensation_currency]
+          properties:
+            total_compensation:
+              type: string
+              nullable: true
+              description: >
+                Sum of every compensation component on the current active
+                contract, represented as a decimal string; null when the
+                employee has no active contract.
+            total_compensation_currency:
+              type: string
+              nullable: true
+              description: ISO 4217 currency code of the current active contract; null when inactive.
     EmployeeListResponse:
       type: object
       required: [data, pagination]
@@ -798,7 +815,7 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/Employee"
+            $ref: "#/components/schemas/EmployeeListItem"
         pagination:
           $ref: "#/components/schemas/EmployeePagination"
     EmployeePagination:

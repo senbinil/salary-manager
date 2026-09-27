@@ -18,7 +18,7 @@ class EmploymentContract < ApplicationRecord
 
   # Sums all employee-specific compensation components attached to this contract.
   def total_compensation
-    employee_compensation&.employee_compensation_components&.sum(:amount)
+    employee_compensation&.employee_compensation_components&.sum(&:amount)
   end
 
   # The country supplies the currency, and a contract may override it (an

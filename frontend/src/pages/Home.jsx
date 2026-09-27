@@ -23,6 +23,20 @@ const FALLBACK_ERROR = 'Could not load employees'
 const DEFAULT_LIMIT = 20
 const LIMIT_OPTIONS = [10, DEFAULT_LIMIT, 50, 100]
 
+function formatAmount(amount, currency) {
+  const numericAmount = Number(amount)
+  if (!Number.isFinite(numericAmount)) return `${amount} ${currency}`
+
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+    }).format(numericAmount)
+  } catch {
+    return `${amount} ${currency}`
+  }
+}
+
 /**
  * Shows employees' organizational roles and whether they have a current
  * active contract.
@@ -66,7 +80,7 @@ export default function Home() {
       {data && (
         <Paper variant="outlined">
           <TableContainer>
-            <Table aria-label="Employee list" sx={{ minWidth: 900 }}>
+            <Table aria-label="Employee list" sx={{ minWidth: 1080 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Name</TableCell>
@@ -74,6 +88,7 @@ export default function Home() {
                   <TableCell>Designation</TableCell>
                   <TableCell>Contract country</TableCell>
                   <TableCell>Contract start date</TableCell>
+                  <TableCell>Total compensation</TableCell>
                   <TableCell>Status</TableCell>
                 </TableRow>
               </TableHead>
@@ -102,6 +117,19 @@ export default function Home() {
                           {isActive ? employee.contract_start_date || '—' : '—'}
                         </TableCell>
                         <TableCell>
+                          {isActive &&
+                          employee.total_compensation !== null &&
+                          employee.total_compensation !== undefined &&
+                          employee.total_compensation_currency ? (
+                            formatAmount(
+                              employee.total_compensation,
+                              employee.total_compensation_currency,
+                            )
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <Chip
                             label={isActive ? 'Active' : 'Inactive'}
                             color={isActive ? 'success' : 'default'}
@@ -114,7 +142,7 @@ export default function Home() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6}>No employees found.</TableCell>
+                    <TableCell colSpan={7}>No employees found.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
