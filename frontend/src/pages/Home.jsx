@@ -7,25 +7,35 @@ import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
+import TablePagination from '@mui/material/TablePagination'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import axios from 'axios'
+import { useState } from 'react'
 import { errorMessage } from '../api/errorMessage.js'
 
 const FALLBACK_ERROR = 'Could not load employees'
+const DEFAULT_LIMIT = 20
+const LIMIT_OPTIONS = [10, DEFAULT_LIMIT, 50, 100]
 
 /**
- * Shows the employee roster. Filters, employee details, and table pagination
- * are delivered in later dashboard slices.
+ * Shows the employee roster. Filters and employee details are delivered in
+ * later dashboard slices.
  */
 export default function Home() {
+  const [page, setPage] = useState(0)
+  const [limit, setLimit] = useState(DEFAULT_LIMIT)
+
   const { data, isPending, error } = useQuery({
-    queryKey: ['employees'],
+    queryKey: ['employees', page, limit],
     queryFn: async () => {
-      const response = await axios.get('/api/v1/employees')
+      const response = await axios.get('/api/v1/employees', {
+        params: { page: page + 1, limit },
+      })
       return response.data
     },
+    placeholderData: keepPreviousData,
   })
 
   const employees = data?.data ?? []
@@ -50,30 +60,46 @@ export default function Home() {
       )}
 
       {data && (
-        <TableContainer component={Paper} variant="outlined">
-          <Table aria-label="Employee list">
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {employees.length > 0 ? (
-                employees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell component="th" scope="row">
-                      {employee.name}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
+        <Paper variant="outlined">
+          <TableContainer>
+            <Table aria-label="Employee list">
+              <TableHead>
                 <TableRow>
-                  <TableCell>No employees found.</TableCell>
+                  <TableCell>Name</TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {employees.length > 0 ? (
+                  employees.map((employee) => (
+                    <TableRow key={employee.id}>
+                      <TableCell component="th" scope="row">
+                        {employee.name}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell>No employees found.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            component="div"
+            count={data.pagination.count}
+            page={page}
+            onPageChange={(_event, nextPage) => setPage(nextPage)}
+            rowsPerPage={limit}
+            onRowsPerPageChange={(event) => {
+              setLimit(Number.parseInt(event.target.value, 10))
+              setPage(0)
+            }}
+            rowsPerPageOptions={LIMIT_OPTIONS}
+            labelRowsPerPage="Rows per page:"
+          />
+        </Paper>
       )}
     </Stack>
   )
