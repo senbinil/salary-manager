@@ -417,19 +417,35 @@ paths:
       operationId: listEmployees
       summary: List employees
       description: >
-        Returns the employees on record, so a client can browse the organization.
-        Requires an authenticated session.
+        Returns one page of employees, ordered by name and then id. Requires an
+        authenticated session.
       security:
         - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: One-based page number; defaults to 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: Number of employees per page; defaults to 20 and is capped at 100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
       responses:
         "200":
-          description: All employees, ordered by name.
+          description: One page of employees with pagination metadata.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Employee"
+                $ref: "#/components/schemas/EmployeeListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -741,6 +757,44 @@ components:
           type: integer
           nullable: true
           description: The account behind the employee, when there is one. Usually absent.
+    EmployeeListResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Employee"
+        pagination:
+          $ref: "#/components/schemas/EmployeePagination"
+    EmployeePagination:
+      type: object
+      required: [page, limit, count, pages, from, to]
+      properties:
+        page:
+          type: integer
+          description: Requested one-based page number.
+        limit:
+          type: integer
+          description: Maximum number of employees on a page.
+        count:
+          type: integer
+          description: Total number of employees matching the list.
+        pages:
+          type: integer
+          description: Total number of pages.
+        from:
+          type: integer
+          description: One-based position of the first employee in this page; 0 when the page is empty.
+        to:
+          type: integer
+          description: Position of the last employee in this page; 0 when the page is empty.
+        previous:
+          type: integer
+          description: Previous page number; omitted when there is no previous page.
+        next:
+          type: integer
+          description: Next page number; omitted when there is no next page.
     SalaryComponent:
       type: object
       description: >
