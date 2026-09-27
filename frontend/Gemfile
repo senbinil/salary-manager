@@ -1,0 +1,8 @@
+source "https://rubygems.org"
+
+# Deploy the SPA as a Docker image [https://kamal-deploy.org]
+gem "kamal", require: false
+
+# Loads .env and .env.<destination> in bin/kamal. Kamal 2 reads only `.kamal/secrets`,
+# so the deploy values come from .env.production instead of the shell.
+gem "dotenv", require: false

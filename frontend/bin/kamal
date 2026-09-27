@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+#
+# Wraps Kamal's gem executable to load the deploy values first.
+#
+# Kamal 2 reads no `.env` file of its own - only `.kamal/secrets-common` and
+# `.kamal/secrets`. Loading `.env` and `.env.<destination>` here is what lets those
+# secrets reference `$KAMAL_REGISTRY_PASSWORD` without exporting it by hand, and lets
+# config/deploy.yml interpolate the rest with `<%= ENV.fetch("...") %>`.
+#
+# Real environment variables win over the files, so `SITE_HOST=x bin/kamal deploy`
+# still overrides what is on disk. `.env*` is gitignored and excluded from the image.
+#
+
+ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
+
+require "rubygems"
+require "bundler/setup"
+
+require "dotenv"
+Dotenv.load(
+  File.expand_path("../.env", __dir__),
+  File.expand_path("../.env.#{ENV.fetch("KAMAL_DESTINATION", "production")}", __dir__)
+)
+
+load Gem.bin_path("kamal", "kamal")

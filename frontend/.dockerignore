@@ -1,0 +1,33 @@
+# Keep the build context to the files the build actually needs.
+
+# VCS and tooling
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Dependencies and build output: npm ci installs inside the image, and a stale local
+# dist or coverage directory must never be copied in.
+node_modules
+dist
+dist-ssr
+coverage
+*.local
+
+# Deploy values (see bin/kamal) and deploy configuration.
+.env*
+.kamal
+config/deploy*.yml
+Gemfile
+Gemfile.lock
+bin/
+
+# Docs
+README.md
+AGENTS.md
+DESIGN.md
+
+# Docker files themselves
+Dockerfile*
+.dockerignore
