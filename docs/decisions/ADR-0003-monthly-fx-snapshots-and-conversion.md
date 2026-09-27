@@ -18,7 +18,7 @@ Employee compensation is stored in one currency per employment contract. The das
 | Snapshot importer | At the monthly run, use currencies on contracts active on that run date as base currencies. Fetch month-to-date observations, choose the earliest available observation per pair, and preserve existing monthly rows on retries. | Implemented |
 | Schedule | Run the importer in production at 02:00 on the last calendar day of each month. | Implemented |
 | Conversion API | Expose conversion through a separate authenticated `POST /api/v1/exchange_rates/convert` endpoint, not an employee controller. Return a conversion result and available target currencies; do not contact the provider per request. | Implemented |
-| Employee detail UI | Show the native total and an optional converted total on active employee details; default the target to the contract currency, offer only targets returned by the API, and explain unavailable conversions while retaining the native value. | Planned |
+| Employee detail UI | Show the native total and an optional converted total on active employee details; default the target to the contract currency, offer only targets returned by the API, and explain unavailable conversions while retaining the native value. | Implemented |
 
 ## Consequences
 
@@ -27,7 +27,7 @@ Employee compensation is stored in one currency per employment contract. The das
 - A missing current-month pair has no live or prior-month fallback. The API returns null conversion amount, rate, and rate date; clients keep the native amount visible.
 - The active contract currency, rather than country reference data, determines the FX base currency. This includes contracts whose currency overrides the country's default.
 - Conversion does not alter compensation rows, employee totals, or dashboard totals. It is a separate display operation; no payroll or reporting calculation is introduced.
-- The frontend has not yet integrated the conversion endpoint. Its agreed behavior is a planned follow-up, not current application behavior.
+- The employee detail UI requests conversion only for an active employee with a total. It keeps the native total visible, defaults the target to the contract currency, and offers only targets the API reports as available. A missing rate or failed request is explained without hiding the native amount, and inactive employees never request conversion.
 
 ## Alternatives considered
 

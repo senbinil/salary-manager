@@ -8,11 +8,11 @@ These documents describe the current employee and compensation workflows, includ
 | --- | --- |
 | [WORKFLOW-AND-OVERVIEW.md](./WORKFLOW-AND-OVERVIEW.md) | Developer overview of the employee, compensation, and FX workflows. |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Current v0.7 domain model, compensation ownership, monthly FX snapshots, dashboard, and API behavior. |
-| [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) | Delivered implementation phases, recorded choices, and the planned frontend FX phase. |
+| [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) | Delivered implementation phases, recorded choices, and the delivered frontend FX phase. |
 | [SALARY-COMPONENT-RELATIONSHIPS.md](./SALARY-COMPONENT-RELATIONSHIPS.md) | How plans, employee-specific amounts, and shared salary component definitions relate. |
 | [decisions/ADR-0001-employee-specific-compensation.md](./decisions/ADR-0001-employee-specific-compensation.md) | Why shared plan amounts were replaced and the alternatives considered. |
 | [decisions/ADR-0002-employee-dashboard-and-totals.md](./decisions/ADR-0002-employee-dashboard-and-totals.md) | Decisions for employee status, contract drill-down, and current compensation summaries. |
-| [decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md) | Decisions for importing monthly rates, converting amounts, and the planned employee detail UI. |
+| [decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md) | Decisions for importing monthly rates, converting amounts, and the employee detail FX display. |
 
 ## Version lineage
 
@@ -34,4 +34,4 @@ The dashboard lists all employees and shows current contract status, contract lo
 
 ## Implementation state
 
-The backend has paginated employee and nested employment-contract read routes. Employee responses include a current total when the employee has an active contract; the list response also includes its currency code. `EmployeeCompensation` supports model-level nested component assignment, but no HTTP contract write endpoint accepts it. Monthly FX snapshots are fetched from Frankfurter for currencies used by active contracts, and `POST /api/v1/exchange_rates/convert` converts amounts from the current month's stored rates. The frontend provides the employee table and contract drill-down; FX display on employee details is planned but not implemented. Dashboard filters, payroll, and reporting remain future work. See the workflow guide, implementation plan, and ADRs for current behavior and decisions.
+The backend has paginated employee and nested employment-contract read routes. Employee responses include a current total when the employee has an active contract; the list response also includes its currency code. `EmployeeCompensation` supports model-level nested component assignment, but no HTTP contract write endpoint accepts it. Monthly FX snapshots are fetched from Frankfurter for currencies used by active contracts, and `POST /api/v1/exchange_rates/convert` converts amounts from the current month's stored rates. The frontend provides the employee table and contract drill-down, and an active employee's detail page can display a converted total beside the native one. Dashboard filters, payroll, and reporting remain future work. See the workflow guide, implementation plan, and ADRs for current behavior and decisions.

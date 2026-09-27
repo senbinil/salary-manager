@@ -4,7 +4,7 @@ This plan extends the v0.6 implementation plan, preserved at [archive/IMPLEMENTA
 
 ## Status
 
-Phases 1–14 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. The backend imports monthly exchange-rate snapshots and exposes a separate conversion endpoint. The frontend does not yet display converted totals; that is planned in Phase 15. Payroll, reporting, and dashboard filters remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
+Phases 1–15 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. The backend imports monthly exchange-rate snapshots and exposes a separate conversion endpoint. Active employee details show the native total and an optional converted total. Payroll, reporting, and dashboard filters remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
 
 ## Delivery approach
 
@@ -131,7 +131,7 @@ The dashboard was delivered in focused slices. Its current table shows organizat
 - Accept a finite, non-negative amount and three-letter currency codes. Return available target currencies and either the current-month conversion, a same-currency result, or null conversion fields when no snapshot exists.
 - Commit request specs before adding the controller and route. Do not fetch provider rates during an API request.
 
-## Phase 15 — Employee detail FX display (planned)
+## Phase 15 — Employee detail FX display
 
 - Add conversion display only to active employee details. Keep the native contract-currency total and show the selected converted amount beside it; use the contract currency as the initial target.
 - Request the conversion endpoint for the contract currency to populate available targets, and offer only currencies returned by the API. Show the rate observation date for converted values.
