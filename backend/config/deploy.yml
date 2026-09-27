@@ -112,3 +112,9 @@ builder:
 # siblings) are created by the entrypoint's `db:prepare` on first boot, which needs
 # the `backend` role to own CREATEDB. Without that, create the four databases by
 # hand before the first deploy.
+# SSH access. KAMAL_SSH_KEY (set in backend/.env.production) selects the private
+# key; net-ssh expands `~`. Without it Kamal falls back to ~/.ssh/id_rsa.
+ssh:
+  user: root
+  keys:
+    - <%= ENV["KAMAL_SSH_KEY"] || "~/.ssh/id_rsa" %>
