@@ -7,7 +7,7 @@ module Api
       before_action :authenticate!
 
       def index
-        employees = Employee.includes(
+        employees = EmployeeQuery.new(filter_params).call.includes(
           :department,
           :designation,
           active_employment_contracts: [
@@ -26,6 +26,8 @@ module Api
           data: employees.map { |employee| employee_list_json(employee) },
           pagination: pagination.data_hash(data_keys: %i[page limit count pages from to previous next])
         }
+      rescue EmployeeQuery::InvalidFilter => error
+        render json: { error: error.message }, status: :bad_request
       end
 
       def show
@@ -38,6 +40,14 @@ module Api
       end
 
       private
+
+      def filter_params
+        filter = params[:filter]
+        return {} if filter.nil?
+        raise EmployeeQuery::InvalidFilter, "filter must be an object" unless filter.is_a?(ActionController::Parameters)
+
+        filter.permit(*EmployeeQuery::FILTERS).to_h
+      end
 
       # A missing record answers with our own 404 body rather than letting
       # RecordNotFound surface as a framework error.
