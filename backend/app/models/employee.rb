@@ -7,6 +7,7 @@ class Employee < ApplicationRecord
   belongs_to :department
   belongs_to :designation
   has_many :employment_contracts
+  has_many :active_employment_contracts, -> { active }, class_name: "EmploymentContract"
 
   validates :name, presence: true
   validates :user, uniqueness: true, allow_nil: true
