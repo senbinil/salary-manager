@@ -30,13 +30,13 @@ RSpec.describe FrankfurterClient do
         "expand" => "providers"
       )
       expect(rates).to eq(
-        [{
+        [ {
           "date" => "2026-09-01",
           "base" => "USD",
           "quote" => "INR",
           "rate" => 83.25,
-          "providers" => ["ECB"]
-        }]
+          "providers" => [ "ECB" ]
+        } ]
       )
     end
 
