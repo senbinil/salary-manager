@@ -1,6 +1,7 @@
 import Alert from '@mui/material/Alert'
 import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
+import Link from '@mui/material/Link'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Table from '@mui/material/Table'
@@ -13,8 +14,10 @@ import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import axios from 'axios'
+import { Link as RouterLink } from 'react-router'
 import { useState } from 'react'
 import { errorMessage } from '../api/errorMessage.js'
+import { paths } from '../router/paths.js'
 
 const FALLBACK_ERROR = 'Could not load employees'
 const DEFAULT_LIMIT = 20
@@ -82,7 +85,13 @@ export default function Home() {
                     return (
                       <TableRow key={employee.id}>
                         <TableCell component="th" scope="row">
-                          {employee.name}
+                          <Link
+                            component={RouterLink}
+                            to={paths.employeeDetailsFor(employee.id)}
+                            underline="hover"
+                          >
+                            {employee.name}
+                          </Link>
                         </TableCell>
                         <TableCell>{employee.department_name}</TableCell>
                         <TableCell>{employee.designation_name}</TableCell>
