@@ -49,30 +49,36 @@ The production recurring schedule runs `FetchExchangeRateSnapshotsJob` at 02:00 
 
 `period_month` is the calendar month's first date and selects which snapshot the conversion service reads. `rate_date` is the provider observation date within that month. The unique pair/month index prevents a later scheduled run or retry from replacing an existing row. The job fetches all base-currency responses before writing and persists the rows in a transaction.
 
+### Monthly rate import
+
 ```mermaid
 sequenceDiagram
-    participant Queue as Production scheduler
-    participant Job as FetchExchangeRateSnapshotsJob
-    participant Client as FrankfurterClient
-    participant Provider as Frankfurter
-    participant DB as exchange_rate_snapshots
-    participant API as ExchangeRatesController
-    participant Service as ExchangeRateConversionService
+    participant Schedule as Monthly schedule
+    participant Job as Snapshot import job
+    participant Provider as Frankfurter API
+    participant Snapshots as Monthly rate snapshots
 
-    Queue->>Job: Run on last day of month
-    Job->>Job: Find currencies on contracts active today
-    loop Each active contract currency
-        Job->>Client: Fetch month-to-date rates for base currency
-        Client->>Provider: GET /v2/rates
-        Provider-->>Client: Rate observations and providers
-        Client-->>Job: Parsed rate rows
-    end
-    Job->>Job: Keep earliest valid observation per pair
-    Job->>DB: Insert snapshots; keep existing monthly pairs
-    API->>Service: Convert amount from source to target
-    Service->>DB: Read current-month pair and available targets
-    DB-->>Service: Snapshot data
-    Service-->>API: Conversion or unavailable result
+    Schedule->>Job: 02:00 on the last day of the month
+    Job->>Provider: month-to-date rates per contract currency
+    Provider-->>Job: observations for the month so far
+    Job->>Snapshots: earliest rate per currency pair and month
+```
+
+### Amount conversion
+
+```mermaid
+sequenceDiagram
+    participant Page as Employee detail page
+    participant API as ExchangeRatesController
+    participant Service as Conversion service
+    participant Snapshots as Monthly rate snapshots
+
+    Page->>API: POST convert with amount and currencies
+    API->>Service: convert the amount
+    Service->>Snapshots: current-month rate for the pair
+    Snapshots-->>Service: rate and observation date
+    Service-->>API: converted amount, rate date, available targets
+    API-->>Page: JSON result
 ```
 
 Clients use authenticated `POST /api/v1/exchange_rates/convert` with `amount`, `from_currency`, and `to_currency`. The API validates a finite non-negative amount and three-letter currency codes, normalizes currency codes to uppercase, and returns decimal strings. `available_target_currencies` contains currencies with current-month snapshots for the requested base, plus the base currency itself.

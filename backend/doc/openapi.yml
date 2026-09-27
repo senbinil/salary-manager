@@ -471,6 +471,38 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: filter[name_cont]
+          in: query
+          required: false
+          description: Case-insensitive substring match on employee name.
+          schema:
+            type: string
+        - name: filter[department_id]
+          in: query
+          required: false
+          description: Employee department id, as returned by GET /api/v1/departments.
+          schema:
+            type: integer
+        - name: filter[designation_id]
+          in: query
+          required: false
+          description: Employee designation id, as returned by GET /api/v1/designations.
+          schema:
+            type: integer
+        - name: filter[employment_status]
+          in: query
+          required: false
+          description: Limit to employees with or without a contract active today.
+          schema:
+            type: string
+            enum: [active, inactive]
+        - name: filter[country_code]
+          in: query
+          required: false
+          description: Country code of the relevant contract, as returned by GET /api/v1/countries; active employees match on the current contract and inactive employees on an ended one.
+          schema:
+            type: string
+            pattern: '^[A-Za-z]{2}$'
       responses:
         "200":
           description: One page of employees with pagination metadata.
@@ -478,6 +510,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EmployeeListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
