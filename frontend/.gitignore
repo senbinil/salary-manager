@@ -13,6 +13,9 @@ dist-ssr
 coverage
 *.local
 
+# Environment files. The deploy values live in .env.production, which stays untracked.
+.env*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
