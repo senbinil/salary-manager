@@ -13,11 +13,24 @@ bin/dev
 
 The API is available at `http://localhost:3000`. Application endpoints use `/api/v1`; Rodauth serves authentication routes under the same prefix.
 
-To populate the employee dashboard with 100 sample employees and active sample
-contracts in development, run `bin/rails db:seed` from this directory. The seed
-removes all employees, contracts, and compensation before recreating the sample
-data. Accounts and reference data are preserved. It only runs in development
-and test environments.
+Running `bin/rails db:seed` from this directory creates the sign-in accounts to
+work with - `dev@example.com`, `manager@example.com` and `hr@example.com`, each
+with a different role and the password `secret123`. It is idempotent, and only
+runs in development and test.
+
+Neither sample employees nor reference data are part of the seed: a load test
+wants thousands of employees, so they come from the `sample_data` tasks, which
+create the reference data they need, replace whatever the loader created before,
+and never touch an employee named any other way.
+
+```sh
+CONFIRM_SAMPLE_DATA=yes bin/rails 'sample_data:load[10000]'
+CONFIRM_SAMPLE_DATA=yes bin/rails sample_data:clear
+```
+
+The load goes in through batched `insert_all`, so 10,000 employees - about 60,000
+rows with their contracts, compensations and components - takes seconds. See
+`lib/sample_data/employee_seeder.rb`.
 
 ## Background jobs
 
