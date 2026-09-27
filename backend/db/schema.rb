@@ -120,12 +120,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_27_100000) do
     t.date "rate_date", null: false
     t.string "source", null: false
     t.datetime "updated_at", null: false
-    t.index ["period_month"], name: "index_exchange_rate_snapshots_on_period_month"
     t.index ["period_month", "base_currency", "quote_currency"], name: "idx_exchange_rate_snapshots_period_pair", unique: true
-    t.check_constraint "base_currency <> quote_currency", name: "exchange_rate_snapshots_distinct_currencies"
-    t.check_constraint "period_month = (date_trunc('month'::text, period_month::timestamp with time zone))::date", name: "exchange_rate_snapshots_period_month_start"
+    t.index ["period_month"], name: "index_exchange_rate_snapshots_on_period_month"
+    t.check_constraint "base_currency::text <> quote_currency::text", name: "exchange_rate_snapshots_distinct_currencies"
+    t.check_constraint "period_month = date_trunc('month'::text, period_month::timestamp with time zone)::date", name: "exchange_rate_snapshots_period_month_start"
     t.check_constraint "rate > 0::numeric", name: "exchange_rate_snapshots_positive_rate"
-    t.check_constraint "rate_date >= period_month AND rate_date < (period_month + '1 mon'::interval)", name: "exchange_rate_snapshots_rate_in_period"
+    t.check_constraint "rate_date >= period_month AND rate_date < (period_month + 'P1M'::interval)", name: "exchange_rate_snapshots_rate_in_period"
   end
 
   create_table "salary_components", force: :cascade do |t|
