@@ -1,4 +1,5 @@
 import Alert from '@mui/material/Alert'
+import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
@@ -20,8 +21,8 @@ const DEFAULT_LIMIT = 20
 const LIMIT_OPTIONS = [10, DEFAULT_LIMIT, 50, 100]
 
 /**
- * Shows the employee roster. Filters and employee details are delivered in
- * later dashboard slices.
+ * Shows employees' organizational roles and whether they have a current
+ * active contract.
  */
 export default function Home() {
   const [page, setPage] = useState(0)
@@ -62,24 +63,49 @@ export default function Home() {
       {data && (
         <Paper variant="outlined">
           <TableContainer>
-            <Table aria-label="Employee list">
+            <Table aria-label="Employee list" sx={{ minWidth: 900 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Name</TableCell>
+                  <TableCell>Department</TableCell>
+                  <TableCell>Designation</TableCell>
+                  <TableCell>Contract country</TableCell>
+                  <TableCell>Contract start date</TableCell>
+                  <TableCell>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {employees.length > 0 ? (
-                  employees.map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell component="th" scope="row">
-                        {employee.name}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  employees.map((employee) => {
+                    const isActive = employee.employment_status === 'active'
+
+                    return (
+                      <TableRow key={employee.id}>
+                        <TableCell component="th" scope="row">
+                          {employee.name}
+                        </TableCell>
+                        <TableCell>{employee.department_name}</TableCell>
+                        <TableCell>{employee.designation_name}</TableCell>
+                        <TableCell>
+                          {isActive ? employee.country_name || '—' : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {isActive ? employee.contract_start_date || '—' : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={isActive ? 'Active' : 'Inactive'}
+                            color={isActive ? 'success' : 'default'}
+                            size="small"
+                            variant={isActive ? 'filled' : 'outlined'}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell>No employees found.</TableCell>
+                    <TableCell colSpan={6}>No employees found.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
