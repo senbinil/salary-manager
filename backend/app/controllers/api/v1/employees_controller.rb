@@ -2,10 +2,22 @@ module Api
   module V1
     # Lists the employees on record, so a client can browse the organization.
     class EmployeesController < ApplicationController
+      include Pagy::Method
+
       before_action :authenticate!
 
       def index
-        render json: Employee.order(:name).map { |employee| employee_json(employee) }
+        pagination, employees = pagy(
+          :offset,
+          Employee.order(:name, :id),
+          limit: 20,
+          client_limit: 100
+        )
+
+        render json: {
+          data: employees.map { |employee| employee_json(employee) },
+          pagination: pagination.data_hash(data_keys: %i[page limit count pages from to previous next])
+        }
       end
 
       def show
