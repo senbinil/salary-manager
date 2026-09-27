@@ -91,6 +91,9 @@ describe('Home employee dashboard', () => {
     ])
 
     const activeRow = screen.getByRole('row', { name: /Ada Lovelace/ })
+    expect(
+      within(activeRow).getByRole('link', { name: 'Ada Lovelace' }),
+    ).toHaveAttribute('href', '/employees/1')
     expect(within(activeRow).getByText('Engineering')).toBeInTheDocument()
     expect(within(activeRow).getByText('Principal Engineer')).toBeInTheDocument()
     expect(within(activeRow).getByText('Active')).toBeInTheDocument()
