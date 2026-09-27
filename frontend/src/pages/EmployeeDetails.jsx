@@ -282,6 +282,37 @@ export default function EmployeeDetails() {
                       No compensation components.
                     </Typography>
                   )}
+                  {isActive &&
+                    data.employee.total_compensation !== null &&
+                    data.employee.total_compensation !== undefined && (
+                      <>
+                        <Divider />
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 2,
+                          }}
+                        >
+                          <Typography sx={{ fontWeight: 700 }}>
+                            Total compensation
+                          </Typography>
+                          <Typography
+                            sx={{
+                              fontWeight: 700,
+                              textAlign: 'right',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {formatAmount(
+                              data.employee.total_compensation,
+                              contract.currency,
+                            )}
+                          </Typography>
+                        </Box>
+                      </>
+                    )}
                 </Stack>
               </Paper>
             </Stack>
