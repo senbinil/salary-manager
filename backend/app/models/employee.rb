@@ -9,6 +9,12 @@ class Employee < ApplicationRecord
   has_many :employment_contracts
   has_many :active_employment_contracts, -> { active }, class_name: "EmploymentContract"
 
+  # Sums all component amounts on the current contract, in that contract's currency.
+  def total_compensation
+    contract = active_employment_contracts.order(start_date: :desc).first
+    contract&.employee_compensation&.employee_compensation_components&.sum(:amount)
+  end
+
   validates :name, presence: true
   validates :user, uniqueness: true, allow_nil: true
 end
