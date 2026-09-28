@@ -13,6 +13,29 @@ bin/dev
 
 The API is available at `http://localhost:3000`. Application endpoints use `/api/v1`; Rodauth serves authentication routes under the same prefix.
 
+Running `bin/rails db:seed` from this directory creates the sign-in accounts to
+work with - `dev@example.com`, `manager@example.com` and `hr@example.com`, each
+with a different role. It is idempotent, leaves an existing account alone, and
+runs in every environment, warning before it writes in production.
+
+Their password comes from `credentials.default_password`. The seed refuses to run
+without it rather than falling back to a password in the repository, which is
+public - add it with `bin/rails credentials:edit` when it is missing.
+
+Neither sample employees nor reference data are part of the seed: a load test
+wants thousands of employees, so they come from the `sample_data` tasks, which
+create the reference data they need, replace whatever the loader created before,
+and never touch an employee named any other way.
+
+```sh
+CONFIRM_SAMPLE_DATA=yes bin/rails 'sample_data:load[10000]'
+CONFIRM_SAMPLE_DATA=yes bin/rails sample_data:clear
+```
+
+The load goes in through batched `insert_all`, so 10,000 employees - about 60,000
+rows with their contracts, compensations and components - takes seconds. See
+`lib/sample_data/employee_seeder.rb`.
+
 ## Background jobs
 
 Active Job runs on Solid Queue, which keeps a database per environment (`backend_development_queue`, `backend_test_queue`, `backend_production_queue`). `bin/setup` and `bin/rails db:prepare` create them along with the application databases.
