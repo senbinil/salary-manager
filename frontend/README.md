@@ -15,7 +15,7 @@ npm run dev
 
 ## Deployment
 
-Production serves the built SPA from an nginx image built by `Dockerfile` and deployed with [Kamal](https://kamal-deploy.org) (`config/deploy.yml`), pushed to Docker Hub. Kamal's proxy terminates TLS for the site host and forwards to nginx on port 80; the image itself carries no runtime configuration.
+Production serves the built SPA from an nginx image built by `Dockerfile` and deployed with [Kamal](https://kamal-deploy.org) (`config/deploy.yml`), pushed to Docker Hub. Kamal's proxy terminates TLS for the site host and forwards to nginx on port 80; the image itself carries no runtime configuration. The shared topology and the backend's half of the deployment are in [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
 
 The browser calls the API cross-origin, so the API origin is a **build-time** value: `builder.args.VITE_API_URL` feeds the Docker build, Vite inlines it into the bundle, and `src/api/client.js` uses it to set axios's `baseURL` and `withCredentials`. Changing the API origin therefore needs a rebuild, not a restart.
 

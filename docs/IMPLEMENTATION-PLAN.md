@@ -4,7 +4,7 @@ This plan extends the v0.6 implementation plan, preserved at [archive/IMPLEMENTA
 
 ## Status
 
-Phases 1–15 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. The backend imports monthly exchange-rate snapshots and exposes a separate conversion endpoint. Active employee details show the native total and an optional converted total. Payroll, reporting, and dashboard filters remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
+Phases 1–16 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination, and filters the roster by name, department, designation, employment status, and contract country. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. The backend imports monthly exchange-rate snapshots and exposes a separate conversion endpoint. Active employee details show the native total and an optional converted total. Payroll and reporting remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
 
 ## Delivery approach
 
@@ -138,9 +138,24 @@ The dashboard was delivered in focused slices. Its current table shows organizat
 - If no rate is available or the request fails, retain the native total and explain that conversion is unavailable. Do not request conversion for inactive employees.
 - Follow frontend test-first commits. Cover available currencies, target selection, converted amount and date, missing rates, request failures, and inactive employees.
 
-## Deferred — sample dashboard seed data
+## Phase 16 — Dashboard filters (complete)
 
-The implementation discussion selected a sample dataset of about 100 employees with sample contracts. The agreed reset scope was all employees, employment contracts, and employee compensation data, while preserving accounts and reference data, with a warning before the reset. This seed change is not part of the current implementation: `backend/db/seeds.rb` remains the Rails template stub. Treat the dataset and reset behavior as pending until a seed feature is implemented and reviewed.
+- Accept `filter[name_cont]`, `filter[department_id]`, `filter[designation_id]`, `filter[employment_status]`, and `filter[country_code]` on the employee list endpoint. Combine the supplied filters, ignore unknown keys, and answer 400 for a malformed value.
+- Apply the status rule to the country filter: an active employee matches on the current contract's country, an inactive employee on an ended contract's.
+- Commit request specs before the query object, and document the parameters in OpenAPI.
+- Add the five dashboard controls plus Clear filters. Reset to the first page whenever a filter changes, keep the typed name value untrimmed in state and trim it only in the request, and feed the dropdowns from the reference index endpoints.
+- Follow frontend test-first commits: each control, the combined request, clearing, and the empty result.
+
+## Sample data
+
+The sample employee dataset is delivered through rake tasks, not the seed. `db/seeds.rb` creates only the three sign-in accounts and reads their password from `credentials.default_password`; employee rows stay out of it, because `db:seed:replant` runs the seed against the test database in CI and any employee it created would break specs that assert exact counts.
+
+```sh
+CONFIRM_SAMPLE_DATA=yes bin/rails 'sample_data:load[10000]'
+CONFIRM_SAMPLE_DATA=yes bin/rails sample_data:clear
+```
+
+Both tasks demand the confirmation variable and refuse to run in the test environment. `load` replaces the previously loaded set, `clear` deletes exactly the rows that loader created (matched by the `Sample Employee NNNNN` name prefix), and neither touches accounts or manually created records. `SampleData::EmployeeSeeder` inserts in batches of 500, so 10,000 employees - about 60,000 rows with their contracts, compensations and components - takes seconds. Reference data is created on the way in, which is what makes it optional to seed anything else locally.
 
 ## Verification
 
