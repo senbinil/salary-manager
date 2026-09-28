@@ -11,6 +11,8 @@ import '@fontsource/roboto/600.css'
 import '@fontsource/roboto/700.css'
 import { routes } from './router/routes.js'
 import { theme } from './theme'
+// Configures the axios defaults before any screen can issue a request.
+import './api/client.js'
 
 const router = createBrowserRouter(routes)
 

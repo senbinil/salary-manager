@@ -12,9 +12,10 @@ backend/vendor/
 backend/coverage/
 
 # Secrets — never expose to agents
-config/master.key
+**/config/master.key
 .env
 .env.*
+backend/.env.production
 !.env.example
 
 # Future frontend dependencies

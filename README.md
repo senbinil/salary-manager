@@ -32,6 +32,10 @@ npm run dev
 
 Backend verification uses `cd backend && bin/ci`. Frontend checks use `cd frontend && npm run lint`, `npm run test:run`, and `npm run build`.
 
+## Deployment
+
+The backend runs in production as a Docker container managed by [Kamal](https://kamal-deploy.org): `cd backend && bin/kamal deploy`. It uses the Postgres accessory that another Kamal service already runs on the same host, and the API is served from its own subdomain, so `CORS_ORIGINS` must list the frontend origin. See [`backend/README.md`](./backend/README.md#deployment) for the `.env.production` values, the shared database role, and the first-deploy steps.
+
 ## Stack
 
 | App | Main technologies |
