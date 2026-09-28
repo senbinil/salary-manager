@@ -24,6 +24,8 @@ tags:
     description: Application health checks
   - name: Session
     description: The signed-in account's session state (application endpoints)
+  - name: Dashboard
+    description: Organization-wide overview of the active workforce and its compensation
   - name: CompensationPlans
     description: Named tags used to classify employee-specific compensation
   - name: Countries
@@ -252,6 +254,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/dashboard/summary:
+    get:
+      tags: [Dashboard]
+      operationId: getDashboardSummary
+      summary: Get the dashboard overview
+      description: >
+        Reports the organization-wide overview: how many employees are active today,
+        and per contract country how many of them there are and what their current
+        compensation sums to. Totals are native to each country's currency and are
+        not converted. Requires an authenticated session.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: The active workforce and its compensation, grouped by country.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -1063,3 +1087,44 @@ components:
         password:
           type: string
           description: Current password.
+    DashboardCountryTotal:
+      type: object
+      description: >
+        One contract country's share of the active workforce. Amounts are in that
+        country's own currency and are never converted to a common base.
+      required: [country_code, country_name, currency, employee_count, total_compensation]
+      properties:
+        country_code:
+          type: string
+          pattern: "^[A-Z]{2}$"
+          description: ISO 3166-1 alpha-2 country code of the active contracts.
+        country_name:
+          type: string
+          description: Country name.
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: ISO 4217 currency the count and total are expressed in.
+        employee_count:
+          type: integer
+          description: Employees whose contract active today employs them in this country.
+        total_compensation:
+          type: string
+          description: >
+            Sum of every compensation component on those active contracts, as a
+            decimal string, in the country's currency.
+    DashboardSummary:
+      type: object
+      description: >
+        The organization-wide overview: the active workforce and its current
+        compensation, grouped by contract country.
+      required: [total_active_employees, country_totals]
+      properties:
+        total_active_employees:
+          type: integer
+          description: Number of employees whose contract includes today.
+        country_totals:
+          type: array
+          description: One entry per country with at least one active employee, ordered by code.
+          items:
+            $ref: "#/components/schemas/DashboardCountryTotal"
