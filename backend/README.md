@@ -15,8 +15,12 @@ The API is available at `http://localhost:3000`. Application endpoints use `/api
 
 Running `bin/rails db:seed` from this directory creates the sign-in accounts to
 work with - `dev@example.com`, `manager@example.com` and `hr@example.com`, each
-with a different role and the password `secret123`. It is idempotent, and only
-runs in development and test.
+with a different role. It is idempotent, leaves an existing account alone, and
+runs in every environment, warning before it writes in production.
+
+Their password comes from `credentials.default_password`. The seed refuses to run
+without it rather than falling back to a password in the repository, which is
+public - add it with `bin/rails credentials:edit` when it is missing.
 
 Neither sample employees nor reference data are part of the seed: a load test
 wants thousands of employees, so they come from the `sample_data` tasks, which
