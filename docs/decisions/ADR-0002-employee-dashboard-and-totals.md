@@ -22,6 +22,7 @@ The employee dashboard started as a paginated name list. It now presents current
 | Dashboard total API | Include `total_compensation` and `total_compensation_currency` in each employee list item. Use the active contract's currency; return `null` for both fields when inactive. | Implemented |
 | Dashboard total display | Format the total using the contract currency and the browser's locale. Do not display a current total for an inactive employee. | Implemented |
 | Dashboard filters | Filter the roster server-side by exactly five controls: a case-insensitive name substring, department, designation, employment status, and contract country. Return to the first page when a filter changes, offer a Clear filters action, and populate the dropdowns from the reference index endpoints. | Implemented |
+| Dashboard overview aggregates | Add an organization-wide `GET /api/v1/dashboard/summary` returning the active-employee count and, per contract country, the active headcount and the sum of the compensation on active contracts. Keep each country's total in that country's currency, group by contract country only, and ignore the roster filters. | Implemented |
 | Sample data | Deliver production-like employees through the `sample_data` rake tasks rather than the seed. The tasks require an explicit confirmation, refuse to run in the test environment, replace only rows they created (matched by a name prefix), and leave accounts and reference data alone. | Implemented |
 
 ## Consequences
@@ -31,7 +32,7 @@ The employee dashboard started as a paginated name list. It now presents current
 - The total is a direct sum in one contract currency. It is not net pay, a payroll result, or an FX-normalized report.
 - The list API supplies a currency code beside the decimal total so clients do not infer currency from employment country.
 - The detail UI selects one contract automatically. The nested contract API still exposes full history and single-contract reads, but the page does not provide a contract-history selector.
-- No reporting period, aggregate report endpoint, payroll run, or contract write route was added in these phases. The roster filters arrived later, in the slice recorded above.
+- No reporting period, stored report, payroll run, or contract write route was added in these phases. The roster filters arrived later, in the slice recorded above; the organization-wide overview aggregate was added later still, and is a current-state summary rather than a stored report.
 - The sample-data entry is delivered as two rake tasks rather than a seed change, so a fresh clone still has a template-only `db/seeds.rb` apart from the sign-in accounts.
 
 ## Implementation sequence

@@ -4,7 +4,7 @@ This plan extends the v0.6 implementation plan, preserved at [archive/IMPLEMENTA
 
 ## Status
 
-Phases 1–16 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination, and filters the roster by name, department, designation, employment status, and contract country. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. The backend imports monthly exchange-rate snapshots and exposes a separate conversion endpoint. Active employee details show the native total and an optional converted total. Payroll and reporting remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
+Phases 1–17 below are implemented. The dashboard lists all employees with current contract fields, total compensation, status, and server-backed pagination, and filters the roster by name, department, designation, employment status, and contract country. An organization-wide overview reports the active-employee count and per-country headcount and compensation totals. Employee drill-down selects the active contract for an active employee and the most recent ended contract for an inactive employee. The backend imports monthly exchange-rate snapshots and exposes a separate conversion endpoint. Active employee details show the native total and an optional converted total. Payroll and reporting remain future work. `EmployeeCompensation` supports nested component assignment at the model layer, but no HTTP contract write route was added.
 
 ## Delivery approach
 
@@ -145,6 +145,13 @@ The dashboard was delivered in focused slices. Its current table shows organizat
 - Commit request specs before the query object, and document the parameters in OpenAPI.
 - Add the five dashboard controls plus Clear filters. Reset to the first page whenever a filter changes, keep the typed name value untrimmed in state and trim it only in the request, and feed the dropdowns from the reference index endpoints.
 - Follow frontend test-first commits: each control, the combined request, clearing, and the empty result.
+
+## Phase 17 — Dashboard overview aggregates (complete)
+
+- Add authenticated `GET /api/v1/dashboard/summary`, an organization-wide overview of the active workforce: the number of employees with a contract active today, and per contract country the active headcount and the sum of the compensation on those active contracts.
+- Reuse the active-contract rule and the total's all-category sum. Keep each country's total in that country's currency; do not convert to a common base and do not split a country by contract currency.
+- Return only countries with at least one active employee, ordered by code. The overview is organization-wide and ignores the roster filters.
+- Commit the query spec before the query object, and the request spec before the controller and route. Document the endpoint in OpenAPI.
 
 ## Sample data
 

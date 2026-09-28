@@ -4,11 +4,11 @@ Salary Manager is a monorepo for managing employee contracts and employee-specif
 
 ## Current state
 
-- The backend provides cookie-session authentication, read endpoints for employees, reference data and compensation plans, nested employment contracts, and a current-month exchange-rate conversion endpoint.
+- The backend provides cookie-session authentication, read endpoints for employees, reference data and compensation plans, nested employment contracts, an organization-wide dashboard overview endpoint, and a current-month exchange-rate conversion endpoint.
 - Each employment contract has one `EmployeeCompensation`. Compensation plans are reusable filter tags; component amounts belong to that contract's compensation and use the contract currency.
 - `EmployeeCompensation` supports nested component assignment at the model layer. There are no HTTP contract create/update endpoints.
 - The frontend provides sign-in, a session-gated shell, a paginated and filterable employee table with active-contract details and total compensation, and an employee contract drill-down that can display an active employee's total in another available currency. Payroll and reporting UI remain future work.
-- There is no payroll run, aggregate report endpoint, or reporting-month selector; currency conversion is a separate read operation over the stored monthly snapshots.
+- There is no payroll run, reporting-month selector, or stored report; the dashboard overview is a current-state aggregate, and currency conversion is a separate read operation over the stored monthly snapshots.
 - A seed creates three sign-in accounts (`dev@example.com`, `manager@example.com` and `hr@example.com`, one per role). Employees and reference data come from the `sample_data` rake tasks, not the seed.
 
 ## Data model
@@ -175,7 +175,7 @@ GitHub Actions runs checks when changes touch each app:
 ## Documentation
 
 - [Architecture v0.7](./docs/ARCHITECTURE.md) — current model and behavior.
-- [Implementation plan](./docs/IMPLEMENTATION-PLAN.md) — delivered model/API work, dashboard slices, dashboard filters, and employee drill-down.
+- [Implementation plan](./docs/IMPLEMENTATION-PLAN.md) — delivered model/API work, dashboard slices, dashboard filters, overview aggregates, and employee drill-down.
 - [Salary component relationships](./docs/SALARY-COMPONENT-RELATIONSHIPS.md) — plan tags, shared component definitions, and employee-specific amounts.
 - [Deployment](./docs/DEPLOYMENT.md) — deployed topology, Kamal configuration, and the `.env.production` keys.
 - [ADR-0001](./docs/decisions/ADR-0001-employee-specific-compensation.md) — rationale and alternatives for the compensation model.
