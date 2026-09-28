@@ -89,9 +89,17 @@ The Postgres service is the accessory that another Kamal service already runs on
 ```sh
 bin/kamal setup         # first deploy: proxy, TLS certificate, image, container
 bin/kamal app logs -f   # expect "Started Supervisor" from SOLID_QUEUE_IN_PUMA
-bin/kamal console       # create the first account; production seeds nothing
+bin/kamal console       # Rails console in the running container
 ```
 
 `bin/kamal deploy` ships later releases, and the entrypoint migrates the database on boot. `bin/kamal app logs`, `bin/kamal console` and `bin/kamal dbc` are the day-to-day commands. The API answers at `https://api.diciq.site`, where Kamal's proxy checks `GET /up` on every deploy.
+
+The entrypoint runs `db:prepare` but never `db:seed`, and the exchange-rate import only fires from `config/recurring.yml`, so the one-off tasks are run by hand. `--reuse` runs them in the container that is already up, with its injected secrets:
+
+```sh
+bin/kamal app exec --reuse "bin/rails db:seed"                                               # sign-in accounts, idempotent
+bin/kamal app exec --reuse "env CONFIRM_SAMPLE_DATA=yes bin/rails 'sample_data:load[10000]'"   # load-test employees
+bin/kamal app exec --reuse "bin/rails runner 'FetchExchangeRateSnapshotsJob.perform_now'"      # current-month rates
+```
 
 `CORS_ORIGINS` is fed from `FRONTEND_ORIGIN` in `.env.production` and must be a full URL. A sibling subdomain is still a different origin, so the browser needs that policy even when both apps share a domain.
