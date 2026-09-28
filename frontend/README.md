@@ -15,7 +15,7 @@ npm run dev
 
 ## Deployment
 
-Production serves the built SPA from an nginx image built by `Dockerfile` and deployed with [Kamal](https://kamal-deploy.org) (`config/deploy.yml`), pushed to Docker Hub. Kamal's proxy terminates TLS for the site host and forwards to nginx on port 80; the image itself carries no runtime configuration. The shared topology and the backend's half of the deployment are in [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
+Production serves the built SPA from an nginx image built by `Dockerfile` and deployed with [Kamal](https://kamal-deploy.org) (`config/deploy.yml`), pushed to Docker Hub. Kamal's proxy terminates TLS for the site host and forwards to nginx on port 80; the image itself carries no runtime configuration. The site is deployed at `https://diciq.site`. The shared topology and the backend's half of the deployment are in [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
 
 The browser calls the API cross-origin, so the API origin is a **build-time** value: `builder.args.VITE_API_URL` feeds the Docker build, Vite inlines it into the bundle, and `src/api/client.js` uses it to set axios's `baseURL` and `withCredentials`. Changing the API origin therefore needs a rebuild, not a restart.
 
@@ -24,8 +24,8 @@ Kamal 2 has no `.env` file support of its own, so `bin/kamal` loads `.env` and `
 ```sh
 DOCKERHUB_USER=...              # Docker Hub user; also the image namespace
 DEPLOY_HOST=...                 # the VPS, the same one the API deploys to
-SITE_HOST=...                   # public host for the SPA; the proxy requests a TLS certificate for it
-API_URL=https://api.example.com # public API origin, no trailing slash and no /api/v1
+SITE_HOST=diciq.site            # public host for the SPA; the proxy requests a TLS certificate for it
+API_URL=https://api.diciq.site  # public API origin, no trailing slash and no /api/v1
 KAMAL_REGISTRY_PASSWORD=...
 KAMAL_SSH_KEY=~/.ssh/deploy_key # private key Kamal connects with; ~/.ssh/id_rsa is the fallback
 ```
@@ -38,7 +38,7 @@ bin/kamal deploy   # later releases
 bin/kamal logs -f  # tail the container logs
 ```
 
-nginx serves `index.html` with `no-cache` and the hashed files under `/assets/` as immutable, so a deploy only needs the new document. A deploy is healthy when `curl -fsS https://<SITE_HOST>/` and `https://<SITE_HOST>/dashboard` both answer 200.
+nginx serves `index.html` with `no-cache` and the hashed files under `/assets/` as immutable, so a deploy only needs the new document. A deploy is healthy when `curl -fsS https://diciq.site/` and `https://diciq.site/dashboard` both answer 200.
 
 ## Checks
 

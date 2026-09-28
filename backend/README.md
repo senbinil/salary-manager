@@ -73,8 +73,8 @@ Kamal 2 has no `.env` file support of its own - its dotenv handling covers only 
 ```sh
 DOCKERHUB_USER=...              # Docker Hub user; also the image namespace
 DEPLOY_HOST=...                 # the VPS
-API_HOST=api.example.com        # public API host; the proxy requests a TLS certificate for it
-FRONTEND_ORIGIN=https://app.example.com
+API_HOST=api.diciq.site        # public API host; the proxy requests a TLS certificate for it
+FRONTEND_ORIGIN=https://diciq.site
 DB_HOST=...                     # container name of the shared Postgres accessory
 DB_USER=backend
 KAMAL_REGISTRY_PASSWORD=...
@@ -92,6 +92,6 @@ bin/kamal app logs -f   # expect "Started Supervisor" from SOLID_QUEUE_IN_PUMA
 bin/kamal console       # create the first account; production seeds nothing
 ```
 
-`bin/kamal deploy` ships later releases, and the entrypoint migrates the database on boot. `bin/kamal app logs`, `bin/kamal console` and `bin/kamal dbc` are the day-to-day commands.
+`bin/kamal deploy` ships later releases, and the entrypoint migrates the database on boot. `bin/kamal app logs`, `bin/kamal console` and `bin/kamal dbc` are the day-to-day commands. The API answers at `https://api.diciq.site`, where Kamal's proxy checks `GET /up` on every deploy.
 
 `CORS_ORIGINS` is fed from `FRONTEND_ORIGIN` in `.env.production` and must be a full URL. A sibling subdomain is still a different origin, so the browser needs that policy even when both apps share a domain.

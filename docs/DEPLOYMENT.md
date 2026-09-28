@@ -2,6 +2,8 @@
 
 Both applications deploy with [Kamal](https://kamal-deploy.org) from their own directory, as two services on one server. This document describes the deployed topology and how each service gets its configuration. Per-app detail stays in [`backend/README.md`](../backend/README.md#deployment) and [`frontend/README.md`](../frontend/README.md#deployment).
 
+The live deployment serves the SPA at <https://diciq.site> and the API at <https://api.diciq.site>.
+
 ## Topology
 
 ```mermaid
@@ -15,12 +17,12 @@ flowchart LR
 
 | Service | Directory | Image | Public host | Health check |
 | --- | --- | --- | --- | --- |
-| Backend | `backend/` | `<DOCKERHUB_USER>/salary-manager-backend` | `API_HOST` | `GET /up` |
-| Frontend | `frontend/` | `<DOCKERHUB_USER>/salary-manager-frontend` | `SITE_HOST` | `GET /` |
+| Backend | `backend/` | `<DOCKERHUB_USER>/salary-manager-backend` | `https://api.diciq.site` (`API_HOST`) | `GET /up` |
+| Frontend | `frontend/` | `<DOCKERHUB_USER>/salary-manager-frontend` | `https://diciq.site` (`SITE_HOST`) | `GET /` |
 
 Both services run on `DEPLOY_HOST` and share Kamal's proxy and the `kamal` docker network. Each `config/deploy.yml` declares its own proxy route, so whichever app is set up first installs the proxy and the second adds a route to it. The proxy terminates TLS with a Let's Encrypt certificate for each host; both containers listen on plain HTTP port 80 internally (`app_port` is left unset because that is the default).
 
-The browser loads the SPA from `SITE_HOST` and calls the API on `API_HOST`; a subdomain is a different origin, which is why the backend needs `CORS_ORIGINS` and the frontend needs `VITE_API_URL`.
+The browser loads the SPA from `SITE_HOST` (`https://diciq.site`) and calls the API on `API_HOST` (`https://api.diciq.site`); a subdomain is a different origin, which is why the backend needs `CORS_ORIGINS` and the frontend needs `VITE_API_URL`.
 
 Postgres is **not** an accessory of either app. It is the accessory another Kamal service already runs on the same host, so neither `config/deploy.yml` defines an `accessories:` block — doing so would start a second Postgres and a conflicting volume. The backend container reaches it by container name over the shared network (`DB_HOST`), never through `127.0.0.1`.
 
@@ -107,8 +109,8 @@ The entrypoint runs `db:prepare` but never `db:seed`, so a fresh production inst
 
 Kamal's health check must pass before the old container is stopped, so a failing check rolls the deploy back:
 
-- Backend: `GET https://<API_HOST>/up` answers 200. `production.rb` excludes `/up` from the SSL redirect, or the proxy's plain-HTTP check would receive a 301.
-- Frontend: `GET https://<SITE_HOST>/` answers 200; `https://<SITE_HOST>/dashboard` must too, which the nginx SPA fallback provides.
+- Backend: `GET https://api.diciq.site/up` answers 200. `production.rb` excludes `/up` from the SSL redirect, or the proxy's plain-HTTP check would receive a 301.
+- Frontend: `GET https://diciq.site/` answers 200; `https://diciq.site/dashboard` must too, which the nginx SPA fallback provides.
 
 ## Local development versus production
 

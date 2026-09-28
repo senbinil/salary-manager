@@ -138,6 +138,8 @@ Backend verification uses `cd backend && bin/ci`. Frontend checks use `cd fronte
 
 ## Deployment
 
+Live at [diciq.site](https://diciq.site), with the API at [api.diciq.site](https://api.diciq.site) (`GET /up` is its health check).
+
 Both apps deploy with [Kamal](https://kamal-deploy.org) as two services on one server, sharing Kamal's proxy and the `kamal` docker network, and reading their values from a gitignored `.env.production` in each app directory:
 
 ```sh
