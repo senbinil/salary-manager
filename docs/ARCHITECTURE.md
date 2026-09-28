@@ -17,7 +17,7 @@ In v0.6, amounts moved to an employee's compensation record on their employment 
 5. Salary components are reusable definitions containing a name and category. They do not own amounts.
 6. Employee compensation supports all existing categories: earning, allowance, and contribution. The current total compensation summary sums every category.
 7. Amounts retain decimal precision 16, scale 4. Compensation data has no effective date or reporting-period field, and the dashboard design has no month selector.
-8. The dashboard is a live view of employee and contract data. There is no payroll run, persisted report result, reporting-period selector, or aggregate report endpoint. FX conversion is a separate read operation using monthly stored snapshots.
+8. The dashboard is a live view of employee and contract data. It shows the roster and an organization-wide overview: the active-employee count and, per contract country, the active headcount and the sum of compensation on those active contracts. There is no payroll run, persisted report result, reporting-period selector, or stored report. The overview totals stay native to each country's currency and are not FX-converted. FX conversion is a separate read operation using monthly stored snapshots.
 
 ## 3. Relationships
 
@@ -74,6 +74,8 @@ The table is filtered by exactly five controls, combined with AND: a case-insens
 
 Total compensation is the sum of every component category on the current active contract. An employee without an active contract has no current total. The employee list response returns `total_compensation` and `total_compensation_currency`; both are null when there is no active contract. The currency is the contract currency, which may differ from the country's default. The employee detail response returns `total_compensation` as a decimal string or null. These employee endpoints return native contract-currency totals and do not apply FX conversion.
 
+The dashboard overview is a separate authenticated read, `GET /api/v1/dashboard/summary`. It reports the number of employees with a contract active today and, for each contract country with at least one such employee, that country's active headcount and the sum of the compensation on those active contracts. It is organization-wide: the five roster filters do not narrow it. Amounts stay in the country's own currency, so countries are never summed into one figure, and the grouping uses the current active contract's country rather than an employee's whole contract history. A country with no active employee is omitted, and the rows are ordered by country code.
+
 Selecting an employee opens its detail page. The page selects the active contract for an active employee and the most recent ended contract for an inactive employee. If no applicable contract is found, it shows an informational message. The contract and compensation panels are side by side on medium and larger screens and stacked on narrow screens. Component categories use chips; contract values, component values, and the active-contract total use bold emphasis. The total is shown only for an active contract. An active employee's page also offers a display-currency selector built from the targets the conversion endpoint reports; the converted total and its rate date appear beside the native total, which stays visible with an explanation when a rate is missing or the request fails. Inactive employees request no conversion.
 
 The contract endpoints continue to expose an employee's contract history, ordered by start date, and a single contract scoped to that employee. The current detail UI selects one contract automatically instead of offering a contract-history selector. The employee list responds to `page`, `limit`, and the `filter[...]` parameters above, and answers 400 for an invalid filter value.
@@ -83,7 +85,7 @@ The existing authenticated contract routes remain:
 - GET /api/v1/employees/:employee_id/employment_contracts
 - GET /api/v1/employees/:employee_id/employment_contracts/:id
 
-Index ordering, authentication, employee scoping, and 404 behavior remain unchanged. No report endpoint is added.
+Index ordering, authentication, employee scoping, and 404 behavior remain unchanged. No report behavior is added to these contract routes.
 
 Contract responses keep their existing fields, including top-level compensation_plan_id for compatibility. That ID is derived from the associated employee compensation. Responses add employee_compensation containing its ID, a compensation_plan object with ID and name, and components with amount plus salary component ID, name, and category. All categories are included, ordered by compensation amount descending. Amount serialization retains the existing decimal JSON format.
 
@@ -101,7 +103,7 @@ In production, `FetchExchangeRateSnapshotsJob` is scheduled for 02:00 on the las
 
 `ExchangeRateConversionService` reads only snapshots for the current month. The conversion endpoint reports target currencies present for the requested base currency, plus the base currency itself. Same-currency conversions return the original amount with a rate of 1; a missing pair produces no converted value. There is no live request or prior-month fallback. `rate_date` records which provider observation supplied a conversion.
 
-The endpoint is independent of employee controllers. Employee detail pages show native contract-currency totals and, for active employees, an optional converted total. There is no reporting-period selector, aggregate report endpoint, or stored report result.
+The endpoint is independent of employee controllers. Employee detail pages show native contract-currency totals and, for active employees, an optional converted total. There is no reporting-period selector or stored report; the dashboard overview is a current-state aggregate, not a stored report.
 
 ## 9. Deferred items
 
@@ -115,4 +117,4 @@ The endpoint is independent of employee controllers. Employee detail pages show 
 
 ## 10. Decision history
 
-The reason and alternatives for the compensation ownership change are recorded in [ADR-0001: Employee-specific compensation](./decisions/ADR-0001-employee-specific-compensation.md). Dashboard, drill-down, and total-summary decisions are recorded in [ADR-0002](./decisions/ADR-0002-employee-dashboard-and-totals.md). FX model, provider, importer, conversion API, and UI decisions are recorded in [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md). Earlier architecture and implementation plans are preserved in the archive and remain historical, not implementation guidance.
+The reason and alternatives for the compensation ownership change are recorded in [ADR-0001: Employee-specific compensation](./decisions/ADR-0001-employee-specific-compensation.md). Dashboard, drill-down, and total-summary decisions are recorded in [ADR-0002](./decisions/ADR-0002-employee-dashboard-and-totals.md). FX model, provider, importer, conversion API, and UI decisions are recorded in [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md). The organization-wide dashboard overview aggregate is recorded in [ADR-0002](./decisions/ADR-0002-employee-dashboard-and-totals.md). Earlier architecture and implementation plans are preserved in the archive and remain historical, not implementation guidance.

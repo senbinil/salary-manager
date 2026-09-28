@@ -1,6 +1,6 @@
 # Salary Manager Workflow and Overview
 
-This guide is for developers joining the project or changing the employee compensation, dashboard-filtering, and currency-conversion flows. It describes current behavior first, including the FX display on employee details. For entity details, see the [architecture](./ARCHITECTURE.md); for implementation phases, see the [implementation plan](./IMPLEMENTATION-PLAN.md).
+This guide is for developers joining the project or changing the employee compensation, dashboard roster, filters, and overview, and currency-conversion flows. It describes current behavior first, including the FX display on employee details. For entity details, see the [architecture](./ARCHITECTURE.md); for implementation phases, see the [implementation plan](./IMPLEMENTATION-PLAN.md).
 
 ## System at a glance
 
@@ -13,6 +13,7 @@ flowchart LR
     API --> EmployeeData[Employees and contracts]
     EmployeeData --> Comp[Employee-specific compensation]
     API -->|native totals| UI
+    API -->|overview aggregates| UI
     Scheduler[Monthly production schedule] --> Importer[Snapshot import job]
     Importer --> Provider[Frankfurter rates API]
     Importer --> Snapshots[(Monthly rate snapshots)]
@@ -25,7 +26,7 @@ flowchart LR
 ## Employee and compensation workflow
 
 1. A user signs in through Rodauth. Successful sign-in sets the cookie session used for authenticated application requests.
-2. The dashboard requests a page from `GET /api/v1/employees`. It lists active and inactive employees. Active contract location, start date, status, total, and total currency come from the contract whose dates include today. Inactive employees remain in the roster with no current contract details or total. The five filter controls narrow the roster on the server - name substring, department, designation, employment status, and contract country - so the page and its count reflect the filtered set, and changing one returns to the first page.
+2. The dashboard requests a page from `GET /api/v1/employees`. It lists active and inactive employees. Active contract location, start date, status, total, and total currency come from the contract whose dates include today. Inactive employees remain in the roster with no current contract details or total. The five filter controls narrow the roster on the server - name substring, department, designation, employment status, and contract country - so the page and its count reflect the filtered set, and changing one returns to the first page. A separate organization-wide `GET /api/v1/dashboard/summary` request powers the headline overview: it is not narrowed by the filters and reports the active-employee count plus, per contract country, the active headcount and the compensation total in that country's currency.
 3. Selecting an employee opens its detail page. The frontend reads the employee, contract history, and country reference data. It selects the active contract for an active employee, or the most recently ended contract for an inactive employee.
 4. Contract compensation components belong to that contract's `EmployeeCompensation`. Each row holds an amount and references shared salary-component vocabulary; the plan is a classification tag. The native total sums all component categories in the contract currency.
 5. For an active employee with a total, the detail page requests conversion for the contract currency to learn which targets the current month supports. Choosing a target shows the converted total and the rate's observation date; the native total stays visible, and a missing rate or failed request is explained rather than hidden. Inactive employees never request conversion.
@@ -95,6 +96,7 @@ The employee detail page calls this endpoint for active employees only. It keeps
 | Change | Primary area |
 | --- | --- |
 | Employee list and status payload | `Api::V1::EmployeesController`, `EmployeeQuery`, and employee request specs |
+| Dashboard overview aggregates | `Api::V1::DashboardController`, `DashboardSummaryQuery`, and their specs |
 | Dashboard filter controls | `frontend/src/pages/Home.jsx` and its colocated tests |
 | Contract compensation response | `EmploymentContractsController` and `EmploymentContractCompensationService` |
 | Snapshot data rules | `ExchangeRateSnapshot` model, migration, and model specs |
@@ -103,4 +105,4 @@ The employee detail page calls this endpoint for active employees only. It keeps
 | Conversion request and response | `ExchangeRatesController`, `ExchangeRateConversionService`, request/service specs, and `backend/doc/openapi.yml` |
 | Employee detail UI and FX display | `frontend/src/pages/EmployeeDetails.jsx` and colocated tests |
 
-The complete route and schema reference is [backend/doc/openapi.yml](../backend/doc/openapi.yml). FX decisions by phase are in [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md), and the deployed topology is in [DEPLOYMENT.md](./DEPLOYMENT.md). Payroll, aggregate reporting, and contract write endpoints are not implemented.
+The complete route and schema reference is [backend/doc/openapi.yml](../backend/doc/openapi.yml). FX decisions by phase are in [ADR-0003](./decisions/ADR-0003-monthly-fx-snapshots-and-conversion.md), and the deployed topology is in [DEPLOYMENT.md](./DEPLOYMENT.md). Payroll, stored historical reporting, and contract write endpoints are not implemented; the dashboard overview is a current-state aggregate.
