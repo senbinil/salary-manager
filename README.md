@@ -120,11 +120,10 @@ bin/rails db:seed    # the sign-in accounts; bin/setup does not seed
 bin/dev
 ```
 
-The dashboard starts empty: `bin/setup` prepares the databases but creates no employees or reference data. The `sample_data` task creates what it needs on the way in, and `clear` removes exactly the rows it wrote.
+The dashboard starts empty: `bin/setup` prepares the databases but creates no employees or reference data. The `sample_data` task creates what it needs on the way in, and names each employee with a generated first and last name. Loading is additive, so running it twice leaves two sets behind - reset the database for a clean roster.
 
 ```sh
 CONFIRM_SAMPLE_DATA=yes bin/rails 'sample_data:load[10000]'
-CONFIRM_SAMPLE_DATA=yes bin/rails sample_data:clear
 ```
 
 In another terminal, start the frontend from `frontend/`:

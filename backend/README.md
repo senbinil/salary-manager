@@ -23,14 +23,16 @@ without it rather than falling back to a password in the repository, which is
 public - add it with `bin/rails credentials:edit` when it is missing.
 
 Neither sample employees nor reference data are part of the seed: a load test
-wants thousands of employees, so they come from the `sample_data` tasks, which
-create the reference data they need, replace whatever the loader created before,
-and never touch an employee named any other way.
+wants thousands of employees, so they come from the `sample_data` task, which
+creates the reference data it needs and names each employee with a generated
+first and last name.
 
 ```sh
 CONFIRM_SAMPLE_DATA=yes bin/rails 'sample_data:load[10000]'
-CONFIRM_SAMPLE_DATA=yes bin/rails sample_data:clear
 ```
+
+Loading is additive - nothing identifies a previous load's rows - so running it
+twice leaves two sets of employees behind. Reset the database for a clean roster.
 
 The load goes in through batched `insert_all`, so 10,000 employees - about 60,000
 rows with their contracts, compensations and components - takes seconds. See
