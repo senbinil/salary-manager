@@ -23,7 +23,7 @@ The employee dashboard started as a paginated name list. It now presents current
 | Dashboard total display | Format the total using the contract currency and the browser's locale. Do not display a current total for an inactive employee. | Implemented |
 | Dashboard filters | Filter the roster server-side by exactly five controls: a case-insensitive name substring, department, designation, employment status, and contract country. Return to the first page when a filter changes, offer a Clear filters action, and populate the dropdowns from the reference index endpoints. | Implemented |
 | Dashboard overview aggregates | Add an organization-wide `GET /api/v1/dashboard/summary` returning the active-employee count and, per contract country, the active headcount and the sum of the compensation on active contracts. Keep each country's total in that country's currency, group by contract country only, and ignore the roster filters. | Implemented |
-| Sample data | Deliver production-like employees through the `sample_data` rake tasks rather than the seed. The tasks require an explicit confirmation, refuse to run in the test environment, replace only rows they created (matched by a name prefix), and leave accounts and reference data alone. | Implemented |
+| Sample data | Deliver production-like employees through the `sample_data` rake task rather than the seed. It requires an explicit confirmation, refuses to run in the test environment, names each employee with a generated real name, and only ever inserts - leaving accounts and manually created employees alone. | Implemented |
 
 ## Consequences
 
@@ -39,4 +39,4 @@ The employee dashboard started as a paginated name list. It now presents current
 
 The compensation model and contract response were established first. The employee total helper was then implemented at the model layer and exposed through the employee detail API when the detail page needed it. The dashboard list API and column followed. Backend specs and frontend tests were committed before their corresponding feature commits, with backend and frontend work kept in separate test/feature pairs.
 
-The sample-data work landed as the `sample_data` rake tasks: `db/seeds.rb` creates only the sign-in accounts, and `SampleData::EmployeeSeeder` owns the employee dataset and its `clear` scope.
+The sample-data work landed as the `sample_data` rake task: `db/seeds.rb` creates only the sign-in accounts, and `SampleData::EmployeeSeeder` owns the employee dataset. It was later revised to name employees with generated real names instead of numbered `Sample Employee NNNNN` rows. That prefix was the only marker identifying a previous load's rows, so the `clear` task and the replace-then-insert behaviour went with it: loading is now additive, and a clean roster means resetting the database.

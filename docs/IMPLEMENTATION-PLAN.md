@@ -162,10 +162,9 @@ The sample employee dataset is delivered through rake tasks, not the seed. `db/s
 
 ```sh
 CONFIRM_SAMPLE_DATA=yes bin/rails 'sample_data:load[10000]'
-CONFIRM_SAMPLE_DATA=yes bin/rails sample_data:clear
 ```
 
-Both tasks demand the confirmation variable and refuse to run in the test environment. `load` replaces the previously loaded set, `clear` deletes exactly the rows that loader created (matched by the `Sample Employee NNNNN` name prefix), and neither touches accounts or manually created records. `SampleData::EmployeeSeeder` inserts in batches of 500, so 10,000 employees - about 60,000 rows with their contracts, compensations and components - takes seconds. Reference data is created on the way in, which is what makes it optional to seed anything else locally.
+The task demands the confirmation variable and refuses to run in the test environment. `load` is additive: it inserts the requested employees, names each one with a generated first and last name, and never deletes anything, so loading twice leaves two sets behind and a clean roster means resetting the database. `SampleData::EmployeeSeeder` inserts in batches of 500, so 10,000 employees - about 60,000 rows with their contracts, compensations and components - takes seconds. Reference data is created on the way in, which is what makes it optional to seed anything else locally.
 
 ## Verification
 

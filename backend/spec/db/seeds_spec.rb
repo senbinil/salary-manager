@@ -43,7 +43,7 @@ RSpec.describe "db/seeds.rb" do
 
   # db:seed:replant runs the seed against the test database in CI, so anything
   # it creates here is still there for the next suite run. Employees belong to
-  # the sample_data task, which is explicit about what it replaces.
+  # the sample_data task, which the operator runs deliberately.
   it "seeds no employees or reference data, because the sample_data task owns those" do
     run_seed
 

@@ -1,11 +1,9 @@
 # Bulk sample employees for a production-like test instance: a load test at
 # production scale, or a demo box.
 #
-# Everything it writes is marked by name (NAME_PREFIX), so #clear removes
-# exactly what this class created and can never delete a real employee. Loading
-# is clear-then-insert, which is what makes `load[N]` mean exactly N sample
-# employees: every run leaves the same shape, at the cost of rewriting the set
-# instead of topping it up.
+# Loading is additive. Nothing written here carries a marker that could find it
+# again, so there is no clear step: loading twice leaves two sets behind, and a
+# clean roster means resetting the database.
 #
 # Volume is what makes this a batch job: 10k employees is roughly 60k rows once
 # contracts, compensations and components are counted, so rows go in through
@@ -15,12 +13,19 @@
 # filled (currency, plan, amounts) is set explicitly here.
 module SampleData
   class EmployeeSeeder
-    NAME_PREFIX = "Sample Employee"
     BATCH_SIZE = 500
 
     # One employee in this many has a contract that already ended, so the
     # dashboard's active and inactive filters both have data at volume.
     INACTIVE_EVERY = 5
+
+    # Built from the two name lists rather than from Faker::Name.name, which
+    # sometimes prefixes "Gov." or suffixes "Jr." - wrong for a payroll roster.
+    # Each part is drawn fresh, so a name is retried until this run has not used
+    # it. The `en` lists give roughly 140k combinations, so 10k employees need
+    # almost no retries, and the cap turns a future shortage into a clear error
+    # rather than a hang.
+    NAME_ATTEMPTS = 50
 
     DEPARTMENTS = %w[Engineering Finance Operations Product Sales].freeze
     DESIGNATIONS = [ "Analyst", "Associate", "Engineer", "Manager", "Senior Engineer" ].freeze
@@ -49,16 +54,16 @@ module SampleData
     def initialize(count: 0, logger: Rails.logger)
       @count = count.to_i
       @logger = logger
+      @used_names = {}
     end
 
-    # Replaces the sample employees with exactly count of them, numbered from
-    # one, and creates the reference data they need when it is missing.
+    # Inserts count employees, numbered from one, and creates the reference data
+    # they need when it is missing.
     def call
       raise ArgumentError, "count must be positive" unless count.positive?
 
-      cleared = delete_sample_employees
       reference = ensure_reference_data
-      logger.info "sample employees: replacing #{cleared} with #{count} in batches of #{BATCH_SIZE}"
+      logger.info "sample employees: creating #{count} in batches of #{BATCH_SIZE}"
 
       created = 0
       (1..count).each_slice(BATCH_SIZE) do |batch|
@@ -67,41 +72,18 @@ module SampleData
         logger.info "sample employees: #{created}/#{count}"
       end
 
-      { cleared: cleared, created: created }
-    end
-
-    # Removes every employee this class created, with its contracts,
-    # compensations and components. Employees named any other way - and all
-    # reference data - are left alone.
-    def clear
-      { cleared: delete_sample_employees }
+      { created: created }
     end
 
     private
 
     attr_reader :count, :logger
 
-    def sample_employees
-      Employee.where("name LIKE ?", "#{NAME_PREFIX} %")
-    end
-
-    def delete_sample_employees
-      ids = sample_employees.pluck(:id)
-      return 0 if ids.empty?
-
-      logger.info "sample employees: removing #{ids.size}"
-      ids.each_slice(BATCH_SIZE) do |slice|
-        ActiveRecord::Base.transaction { delete_employees(slice) }
-      end
-
-      ids.size
-    end
-
     def create_batch(reference, numbers)
       ActiveRecord::Base.transaction do
         employee_ids = insert_ids(Employee, numbers.map { |number|
           {
-            name: format("#{NAME_PREFIX} %05d", number),
+            name: unique_name,
             department_id: pick(reference.fetch(:departments), number).id,
             designation_id: pick(reference.fetch(:designations), number).id
           }
@@ -141,14 +123,17 @@ module SampleData
       end
     end
 
-    def delete_employees(ids)
-      contract_ids = EmploymentContract.where(employee_id: ids).pluck(:id)
-      compensation_ids = EmployeeCompensation.where(employment_contract_id: contract_ids).pluck(:id)
+    # A first and last name this run has not used yet.
+    def unique_name
+      NAME_ATTEMPTS.times do
+        name = "#{Faker::Name.first_name} #{Faker::Name.last_name}"
+        next if @used_names.key?(name)
 
-      EmployeeCompensationComponent.where(employee_compensation_id: compensation_ids).delete_all
-      EmployeeCompensation.where(id: compensation_ids).delete_all
-      EmploymentContract.where(id: contract_ids).delete_all
-      Employee.where(id: ids).delete_all
+        @used_names[name] = true
+        return name
+      end
+
+      raise "sample employees: could not generate #{count} distinct names"
     end
 
     # Spread over the last ten years rather than counted from a fixed date: an
