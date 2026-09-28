@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithRouter } from '../test/render.jsx'
@@ -63,7 +63,34 @@ const filterOptions = {
   ],
 }
 
+// The overview is its own request, so an example can point it at a different
+// payload (or a failure) without disturbing the employee list.
+const dashboardSummary = {
+  total_active_employees: 12,
+  country_totals: [
+    {
+      country_code: 'CA',
+      country_name: 'Canada',
+      currency: 'CAD',
+      employee_count: 5,
+      total_compensation: '250000.0000',
+    },
+    {
+      country_code: 'US',
+      country_name: 'United States',
+      currency: 'USD',
+      employee_count: 7,
+      total_compensation: '10250.3750',
+    },
+  ],
+}
+
+let summaryData
+let summaryError
+
 beforeEach(() => {
+  summaryData = dashboardSummary
+  summaryError = null
   axios.get.mockReset()
   axios.get.mockImplementation((url, { params = { page: 1, limit: 20 } } = {}) => {
     if (url === '/api/v1/departments') {
@@ -74,6 +101,11 @@ beforeEach(() => {
     }
     if (url === '/api/v1/countries') {
       return Promise.resolve({ data: filterOptions.countries })
+    }
+    if (url === '/api/v1/dashboard/summary') {
+      return summaryError
+        ? Promise.reject(summaryError)
+        : Promise.resolve({ data: summaryData })
     }
     if (url !== '/api/v1/employees') {
       throw new Error(`Unexpected request: ${url}`)
@@ -106,7 +138,7 @@ describe('Home employee dashboard', () => {
 
     const table = await screen.findByRole('table', { name: 'Employee list' })
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Employees' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
     expect(
       within(table).getAllByRole('columnheader').map((header) => header.textContent),
     ).toEqual([
@@ -269,5 +301,124 @@ describe('Home employee dashboard', () => {
     expect(
       await screen.findByRole('row', { name: /Ada Lovelace/ }),
     ).toBeInTheDocument()
+  })
+})
+
+describe('Home dashboard overview', () => {
+  const formatCount = (count) => new Intl.NumberFormat().format(count)
+  const formatWholeCurrency = (amount, currency) =>
+    new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(Number(amount))
+
+  // jsdom does no layout, so a strip reports no width and every button starts
+  // inert. Give it a scrollable width so the paging buttons become usable.
+  function makeScrollable(strip) {
+    Object.defineProperty(strip, 'scrollWidth', { configurable: true, value: 1000 })
+    Object.defineProperty(strip, 'clientWidth', { configurable: true, value: 400 })
+  }
+
+  it('badges each strip with its own count', async () => {
+    renderWithRouter(homeRoutes)
+
+    expect(
+      await screen.findByText(`${formatCount(12)} Total Active Personnel`),
+    ).toBeInTheDocument()
+    expect(screen.getByText(`${formatCount(2)} Countries`)).toBeInTheDocument()
+  })
+
+  it('shows one card per country with its native compensation total', async () => {
+    renderWithRouter(homeRoutes)
+
+    const strip = await screen.findByRole('group', {
+      name: 'Expense by Country cards',
+    })
+
+    expect(within(strip).getByText('Canada')).toBeInTheDocument()
+    expect(within(strip).getByText('ca · CAD')).toBeInTheDocument()
+    expect(
+      within(strip).getByText(formatWholeCurrency('250000.0000', 'CAD')),
+    ).toBeInTheDocument()
+    expect(within(strip).getByText('United States')).toBeInTheDocument()
+    expect(within(strip).getByText('us · USD')).toBeInTheDocument()
+    expect(
+      within(strip).getByText(formatWholeCurrency('10250.3750', 'USD')),
+    ).toBeInTheDocument()
+  })
+
+  it('shows one card per country with its employee count', async () => {
+    renderWithRouter(homeRoutes)
+
+    const strip = await screen.findByRole('group', {
+      name: 'Employees by Country cards',
+    })
+
+    expect(within(strip).getAllByText('Employees')).toHaveLength(2)
+    expect(within(strip).getByText(formatCount(5))).toBeInTheDocument()
+    expect(within(strip).getByText(formatCount(7))).toBeInTheDocument()
+  })
+
+  it('keeps the strip buttons inert until there is something to scroll', async () => {
+    renderWithRouter(homeRoutes)
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Scroll forward through Expense by Country',
+      }),
+    ).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Scroll back through Expense by Country' }),
+    ).toBeDisabled()
+  })
+
+  it('pages one card per press once the strip overflows', async () => {
+    const scrollBy = vi.fn()
+    Element.prototype.scrollBy = scrollBy
+    const user = userEvent.setup()
+    renderWithRouter(homeRoutes)
+
+    const strip = await screen.findByRole('group', {
+      name: 'Expense by Country cards',
+    })
+    makeScrollable(strip)
+    fireEvent.scroll(strip)
+
+    const forward = screen.getByRole('button', {
+      name: 'Scroll forward through Expense by Country',
+    })
+    expect(forward).toBeEnabled()
+    await user.click(forward)
+
+    // One card plus the gap between cards.
+    expect(scrollBy).toHaveBeenCalledWith({ left: 236, behavior: 'smooth' })
+  })
+
+  it('reports an overview failure without hiding the employee list', async () => {
+    summaryError = Object.assign(new Error('Request failed'), {
+      response: { data: { error: 'Overview unavailable' } },
+    })
+    renderWithRouter(homeRoutes)
+
+    expect(await screen.findByText('Overview unavailable')).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: 'Employee list' })).toBeInTheDocument()
+    expect(screen.getByText('Ada Lovelace')).toBeInTheDocument()
+  })
+
+  it('shows an empty overview when no employee is active', async () => {
+    summaryData = { total_active_employees: 0, country_totals: [] }
+    renderWithRouter(homeRoutes)
+
+    expect(
+      await screen.findByText(`${formatCount(0)} Total Active Personnel`),
+    ).toBeInTheDocument()
+    expect(screen.getByText(`${formatCount(0)} Countries`)).toBeInTheDocument()
+    const expense = screen.getByRole('group', { name: 'Expense by Country cards' })
+    const headcount = screen.getByRole('group', {
+      name: 'Employees by Country cards',
+    })
+    expect(within(expense).getByText('No active employees')).toBeInTheDocument()
+    expect(within(headcount).getByText('No active employees')).toBeInTheDocument()
   })
 })

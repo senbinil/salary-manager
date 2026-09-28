@@ -16,6 +16,7 @@ import axios from 'axios'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { errorMessage } from '../api/errorMessage.js'
+import { formatAmount } from '../lib/format.js'
 import { paths } from '../router/paths.js'
 
 const FALLBACK_ERROR = 'Could not load employee details'
@@ -46,20 +47,6 @@ function selectContract(contracts, employeeStatus, asOfDate) {
           right.start_date.localeCompare(left.start_date),
       )[0] ?? null
   )
-}
-
-function formatAmount(amount, currency) {
-  const numericAmount = Number(amount)
-  if (!Number.isFinite(numericAmount)) return `${amount} ${currency}`
-
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency,
-    }).format(numericAmount)
-  } catch {
-    return `${amount} ${currency}`
-  }
 }
 
 export default function EmployeeDetails() {

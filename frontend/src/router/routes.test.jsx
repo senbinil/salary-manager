@@ -32,6 +32,11 @@ const filterEndpoints = [
   '/api/v1/countries',
 ]
 
+// The dashboard also loads its organization-wide overview.
+const dashboardSummaryResponse = {
+  data: { total_active_employees: 0, country_totals: [] },
+}
+
 describe('routes', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -42,6 +47,9 @@ describe('routes', () => {
       }
       if (filterEndpoints.includes(url)) {
         return Promise.resolve({ data: [] })
+      }
+      if (url === '/api/v1/dashboard/summary') {
+        return Promise.resolve(dashboardSummaryResponse)
       }
       return Promise.resolve({ data: { id: 1, email: 'person@example.com' } })
     })
@@ -72,7 +80,7 @@ describe('routes', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: /employees/i,
+        name: /dashboard/i,
       }),
     ).toBeInTheDocument()
     expect(screen.getByRole('banner')).toBeInTheDocument()
@@ -108,7 +116,7 @@ describe('routes', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: /employees/i,
+        name: /dashboard/i,
       }),
     ).toBeInTheDocument()
   })
@@ -130,7 +138,7 @@ describe('routes', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(
-      screen.queryByRole('heading', { level: 1, name: /employees/i }),
+      screen.queryByRole('heading', { level: 1, name: /dashboard/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -143,7 +151,7 @@ describe('routes', () => {
       await screen.findByLabelText(/checking your session/i),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { level: 1, name: /employees/i }),
+      screen.queryByRole('heading', { level: 1, name: /dashboard/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -156,7 +164,7 @@ describe('routes', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: /employees/i,
+        name: /dashboard/i,
       }),
     ).toBeInTheDocument()
   })
@@ -171,6 +179,9 @@ describe('routes', () => {
       }
       if (filterEndpoints.includes(url)) {
         return Promise.resolve({ data: [] })
+      }
+      if (url === '/api/v1/dashboard/summary') {
+        return Promise.resolve(dashboardSummaryResponse)
       }
       return signedIn
         ? Promise.resolve({ data: { id: 1, email: 'person@example.com' } })
