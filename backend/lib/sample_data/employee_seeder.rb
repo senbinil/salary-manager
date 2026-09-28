@@ -17,7 +17,14 @@ module SampleData
 
     # One employee in this many has a contract that already ended, so the
     # dashboard's active and inactive filters both have data at volume.
-    INACTIVE_EVERY = 5
+    #
+    # Keep this coprime with the option counts below (10 countries, 5 departments,
+    # 5 designations). Every dimension is indexed by the employee number, so a
+    # period sharing a factor with an option count strands the inactive cohort on
+    # a handful of options: at one in five, every inactive employee landed on
+    # Australia or India and in a single department and designation, and neither
+    # of those countries had an active employee at all.
+    INACTIVE_EVERY = 3
 
     # Built from the two name lists rather than from Faker::Name.name, which
     # sometimes prefixes "Gov." or suffixes "Jr." - wrong for a payroll roster.
