@@ -10,7 +10,7 @@ gem "puma", ">= 5.0"
 
 # ActiveSupport 8.1 calls `JSON.parse(source, options)` with a positional options
 # hash, which the json 3.x gem no longer accepts. Pin to 2.x until Rails supports json 3.
-gem "json", "~> 2.0"
+gem "json", "~> 3.0"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 # gem "jbuilder"
 
